@@ -10,7 +10,10 @@
       "Bash(pkill:*)",
       "Bash(lsof:*)",
       "Bash(kill:*)",
-      "Bash(xargs kill -9)"
+      "Bash(xargs kill -9)",
+      "Bash(swift test:*)",
+      "Bash(swift:*)",
+      "Bash(xcodebuild test:*)"
     ],
     "deny": [],
     "ask": []

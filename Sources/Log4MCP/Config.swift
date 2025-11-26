@@ -1,19 +1,28 @@
 import Foundation
 
-enum ServerMode {
+public enum ServerMode {
     case tcp
     case stdio
 }
 
-struct ServerConfig {
-    let port: Int
-    let host: String
-    let maxLogEntries: Int
-    let defaultLogLevel: LogLevel
-    let verbose: Bool
-    let mode: ServerMode
+public struct ServerConfig {
+    public let port: Int
+    public let host: String
+    public let maxLogEntries: Int
+    public let defaultLogLevel: LogLevel
+    public let verbose: Bool
+    public let mode: ServerMode
 
-    static func fromCommandLine() -> ServerConfig {
+    public init(port: Int = 3000, host: String = "0.0.0.0", maxLogEntries: Int = 1000, defaultLogLevel: LogLevel = .info, verbose: Bool = false, mode: ServerMode = .tcp) {
+        self.port = port
+        self.host = host
+        self.maxLogEntries = maxLogEntries
+        self.defaultLogLevel = defaultLogLevel
+        self.verbose = verbose
+        self.mode = mode
+    }
+
+    public static func fromCommandLine() -> ServerConfig {
         var port = 3000
         var host = "0.0.0.0"
         var maxLogEntries = 1000

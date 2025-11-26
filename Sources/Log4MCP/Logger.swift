@@ -1,6 +1,6 @@
 import Foundation
 
-enum LogLevel: String, Codable {
+public enum LogLevel: String, Codable, Sendable {
     case trace = "TRACE"
     case debug = "DEBUG"
     case info = "INFO"
@@ -8,7 +8,7 @@ enum LogLevel: String, Codable {
     case error = "ERROR"
     case fatal = "FATAL"
 
-    var priority: Int {
+    public var priority: Int {
         switch self {
         case .trace: return 0
         case .debug: return 1
@@ -20,17 +20,17 @@ enum LogLevel: String, Codable {
     }
 }
 
-struct LogEntry: Codable {
-    let timestamp: Date
-    let level: LogLevel
-    let message: String
-    let logger: String
-    let thread: String
-    let file: String
-    let line: Int
-    let method: String
+public struct LogEntry: Codable, Sendable {
+    public let timestamp: Date
+    public let level: LogLevel
+    public let message: String
+    public let logger: String
+    public let thread: String
+    public let file: String
+    public let line: Int
+    public let method: String
 
-    init(
+    public init(
         level: LogLevel,
         message: String,
         logger: String,
@@ -49,19 +49,19 @@ struct LogEntry: Codable {
     }
 }
 
-actor Logger {
+public actor Logger {
     private let name: String
     private var level: LogLevel
     private var entries: [LogEntry] = []
     private let maxEntries: Int
 
-    init(name: String, level: LogLevel = .info, maxEntries: Int = 1000) {
+    public init(name: String, level: LogLevel = .info, maxEntries: Int = 1000) {
         self.name = name
         self.level = level
         self.maxEntries = maxEntries
     }
 
-    func log(
+    public func log(
         level: LogLevel,
         message: String,
         file: String = #file,
@@ -87,38 +87,38 @@ actor Logger {
         printEntry(entry)
     }
 
-    func debug(_ message: String, file: String = #file, line: Int = #line, function: String = #function) {
+    public func debug(_ message: String, file: String = #file, line: Int = #line, function: String = #function) {
         log(level: .debug, message: message, file: file, line: line, function: function)
     }
 
-    func info(_ message: String, file: String = #file, line: Int = #line, function: String = #function) {
+    public func info(_ message: String, file: String = #file, line: Int = #line, function: String = #function) {
         log(level: .info, message: message, file: file, line: line, function: function)
     }
 
-    func warn(_ message: String, file: String = #file, line: Int = #line, function: String = #function) {
+    public func warn(_ message: String, file: String = #file, line: Int = #line, function: String = #function) {
         log(level: .warn, message: message, file: file, line: line, function: function)
     }
 
-    func error(_ message: String, file: String = #file, line: Int = #line, function: String = #function) {
+    public func error(_ message: String, file: String = #file, line: Int = #line, function: String = #function) {
         log(level: .error, message: message, file: file, line: line, function: function)
     }
 
-    func fatal(_ message: String, file: String = #file, line: Int = #line, function: String = #function) {
+    public func fatal(_ message: String, file: String = #file, line: Int = #line, function: String = #function) {
         log(level: .fatal, message: message, file: file, line: line, function: function)
     }
 
-    func getEntries(level: LogLevel? = nil) -> [LogEntry] {
+    public func getEntries(level: LogLevel? = nil) -> [LogEntry] {
         if let level = level {
             return entries.filter { $0.level == level }
         }
         return entries
     }
 
-    func clear() {
+    public func clear() {
         entries.removeAll()
     }
 
-    func setLogLevel(_ newLevel: LogLevel) {
+    public func setLogLevel(_ newLevel: LogLevel) {
         self.level = newLevel
     }
 

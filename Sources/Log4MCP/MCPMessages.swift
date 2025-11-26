@@ -2,33 +2,33 @@ import Foundation
 
 // MARK: - MCP Protocol Constants
 
-let MCP_PROTOCOL_VERSION = "2024-11-05"
+public let MCP_PROTOCOL_VERSION = "2024-11-05"
 
 // MARK: - MCP Capabilities
 
-struct MCPCapabilities: Codable {
-    struct Logging: Codable {
-        let level: Bool
+public struct MCPCapabilities: Codable, Sendable {
+    public struct Logging: Codable, Sendable {
+        public let level: Bool
 
-        init(level: Bool = true) {
+        public init(level: Bool = true) {
             self.level = level
         }
     }
 
-    let logging: Logging
+    public let logging: Logging
 
-    init(logging: Logging = Logging()) {
+    public init(logging: Logging = Logging()) {
         self.logging = logging
     }
 }
 
 // MARK: - Server Info
 
-struct ServerInfo: Codable {
-    let name: String
-    let version: String
+public struct ServerInfo: Codable, Sendable {
+    public let name: String
+    public let version: String
 
-    init(name: String = "Log4MCP", version: String = "2.0.0") {
+    public init(name: String = "Log4MCP", version: String = "2.0.0") {
         self.name = name
         self.version = version
     }
@@ -36,20 +36,20 @@ struct ServerInfo: Codable {
 
 // MARK: - Protocol Messages
 
-struct MCPRequest: Codable {
-    let jsonrpc: String = "2.0"
-    let id: String?  // Optional for notifications (system.initialized)
-    let method: String
-    let params: MCPParams?
+public struct MCPRequest: Codable, Sendable {
+    public let jsonrpc: String = "2.0"
+    public let id: String?  // Optional for notifications (system.initialized)
+    public let method: String
+    public let params: MCPParams?
 
-    enum CodingKeys: String, CodingKey {
+    public enum CodingKeys: String, CodingKey, Sendable {
         case jsonrpc
         case id
         case method
         case params
     }
 
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.id = try container.decodeIfPresent(String.self, forKey: .id)  // Optional decode
         self.method = try container.decode(String.self, forKey: .method)
@@ -62,7 +62,7 @@ struct MCPRequest: Codable {
         }
     }
 
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode("2.0", forKey: .jsonrpc)
         try container.encodeIfPresent(id, forKey: .id)  // Encode if present
@@ -71,14 +71,14 @@ struct MCPRequest: Codable {
     }
 }
 
-enum MCPParams: Codable {
+public enum MCPParams: Codable, Sendable {
     case logMessage(LogMessageParams)
     case getEntries(GetEntriesParams)
     case clearLogs(ClearLogsParams)
     case setLogLevel(SetLogLevelParams)
     case none  // For methods that don't require params (system.*, etc)
 
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
         if container.contains(.message) {
@@ -96,7 +96,7 @@ enum MCPParams: Codable {
         }
     }
 
-    init(from decoder: Decoder, method: String) throws {
+    public init(from decoder: Decoder, method: String) throws {
         switch method {
         case "log.message":
             let params = try LogMessageParams(from: decoder)
@@ -123,7 +123,7 @@ enum MCPParams: Codable {
         }
     }
 
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Encoder) throws {
         switch self {
         case .logMessage(let params):
             try params.encode(to: encoder)
@@ -139,53 +139,79 @@ enum MCPParams: Codable {
         }
     }
 
-    enum CodingKeys: String, CodingKey {
+    public enum CodingKeys: String, CodingKey, Sendable {
         case message
         case loggerId
         case level
     }
 }
 
-struct LogMessageParams: Codable {
-    let loggerId: String
-    let level: LogLevel
-    let message: String
+public struct LogMessageParams: Codable, Sendable {
+    public let loggerId: String
+    public let level: LogLevel
+    public let message: String
+
+    public init(loggerId: String, level: LogLevel, message: String) {
+        self.loggerId = loggerId
+        self.level = level
+        self.message = message
+    }
 }
 
-struct GetEntriesParams: Codable {
-    let loggerId: String
-    let level: LogLevel?
+public struct GetEntriesParams: Codable, Sendable {
+    public let loggerId: String
+    public let level: LogLevel?
+
+    public init(loggerId: String, level: LogLevel? = nil) {
+        self.loggerId = loggerId
+        self.level = level
+    }
 }
 
-struct ClearLogsParams: Codable {
-    let loggerId: String
+public struct ClearLogsParams: Codable, Sendable {
+    public let loggerId: String
+
+    public init(loggerId: String) {
+        self.loggerId = loggerId
+    }
 }
 
-struct SetLogLevelParams: Codable {
-    let loggerId: String
-    let level: LogLevel
+public struct SetLogLevelParams: Codable, Sendable {
+    public let loggerId: String
+    public let level: LogLevel
+
+    public init(loggerId: String, level: LogLevel) {
+        self.loggerId = loggerId
+        self.level = level
+    }
 }
 
-struct MCPResponse: Codable {
-    let jsonrpc: String = "2.0"
-    let id: String?  // Optional for notifications
-    let result: MCPResult?
-    let error: MCPError?
+public struct MCPResponse: Codable, Sendable {
+    public let jsonrpc: String = "2.0"
+    public let id: String?  // Optional for notifications
+    public let result: MCPResult?
+    public let error: MCPError?
 
-    enum CodingKeys: String, CodingKey {
+    public enum CodingKeys: String, CodingKey, Sendable {
         case jsonrpc
         case id
         case result
         case error
     }
+
+    public init(id: String?, result: MCPResult?, error: MCPError?) {
+        self.id = id
+        self.result = result
+        self.error = error
+    }
 }
 
-enum MCPResult: Codable {
+public enum MCPResult: Codable, Sendable {
     case success(SuccessResult)
     case entries([LogEntry])
     case initialize(InitializeResult)
 
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
         if container.contains(.entries) {
@@ -200,7 +226,7 @@ enum MCPResult: Codable {
         }
     }
 
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Encoder) throws {
         switch self {
         case .success(let result):
             try result.encode(to: encoder)
@@ -212,7 +238,7 @@ enum MCPResult: Codable {
         }
     }
 
-    enum CodingKeys: String, CodingKey {
+    public enum CodingKeys: String, CodingKey, Sendable {
         case success
         case entries
         case protocolVersion
@@ -221,17 +247,32 @@ enum MCPResult: Codable {
     }
 }
 
-struct InitializeResult: Codable {
-    let protocolVersion: String
-    let capabilities: MCPCapabilities
-    let serverInfo: ServerInfo
+public struct InitializeResult: Codable, Sendable {
+    public let protocolVersion: String
+    public let capabilities: MCPCapabilities
+    public let serverInfo: ServerInfo
+
+    public init(protocolVersion: String, capabilities: MCPCapabilities, serverInfo: ServerInfo) {
+        self.protocolVersion = protocolVersion
+        self.capabilities = capabilities
+        self.serverInfo = serverInfo
+    }
 }
 
-struct SuccessResult: Codable {
-    let success: Bool
+public struct SuccessResult: Codable, Sendable {
+    public let success: Bool
+
+    public init(success: Bool) {
+        self.success = success
+    }
 }
 
-struct MCPError: Codable {
-    let code: Int
-    let message: String
+public struct MCPError: Codable, Sendable {
+    public let code: Int
+    public let message: String
+
+    public init(code: Int, message: String) {
+        self.code = code
+        self.message = message
+    }
 }

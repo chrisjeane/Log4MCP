@@ -1,16 +1,16 @@
 import Foundation
 
-actor StdioTransport {
+public actor StdioTransport {
     private let handler: MCPRequestHandler
     private let verbose: Bool
     private var stdinBuffer = Data()
 
-    init(handler: MCPRequestHandler, verbose: Bool = false) {
+    public init(handler: MCPRequestHandler, verbose: Bool = false) {
         self.handler = handler
         self.verbose = verbose
     }
 
-    func start() async throws {
+    public func start() async throws {
         if verbose {
             await logToStderr("Log4MCP: Starting stdio transport")
         }

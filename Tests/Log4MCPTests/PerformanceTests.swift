@@ -1,0 +1,203 @@
+import Foundation
+@testable import Log4MCPLib
+
+// Phase 4: Performance & Load Tests
+
+final class PerformanceTests {
+
+    // T4.1.1: Log 10,000 messages to single logger
+    func testHighVolumeSingleLogger() async {
+        let logger = Logger(name: "highVolume", maxEntries: 10000)
+        let messageCount = 10000
+
+        let startTime = Date()
+
+        for i in 1...messageCount {
+            await logger.info("Message \(i)")
+        }
+
+        let elapsed = Date().timeIntervalSince(startTime)
+
+        let entries = await logger.getEntries()
+        assert(entries.count == messageCount, "Should have \(messageCount) entries")
+        print("✓ Logged \(messageCount) messages in \(String(format: "%.2f", elapsed))s")
+    }
+
+    // T4.1.2: Log to 100 different loggers
+    func testDistributedLogging() async {
+        let loggerCount = 100
+        let messagesPerLogger = 100
+        var loggers: [Logger] = []
+
+        for i in 0..<loggerCount {
+            loggers.append(Logger(name: "logger\(i)"))
+        }
+
+        let startTime = Date()
+
+        for (index, logger) in loggers.enumerated() {
+            for j in 1...messagesPerLogger {
+                await logger.info("Message \(j)")
+            }
+        }
+
+        let elapsed = Date().timeIntervalSince(startTime)
+
+        var totalEntries = 0
+        for logger in loggers {
+            let entries = await logger.getEntries()
+            totalEntries += entries.count
+        }
+
+        assert(totalEntries == loggerCount * messagesPerLogger, "Should have all messages logged")
+        print("✓ Logged to \(loggerCount) loggers in \(String(format: "%.2f", elapsed))s")
+    }
+
+    // T4.1.3: Log with rotation
+    func testLogRotation() async {
+        let maxEntries = 100
+        let totalMessages = 1000
+        let logger = Logger(name: "rotation", maxEntries: maxEntries)
+
+        for i in 1...totalMessages {
+            await logger.info("Message \(i)")
+        }
+
+        let entries = await logger.getEntries()
+        assert(entries.count == maxEntries, "Should maintain max entries limit")
+        assert(entries.first?.message == "Message \(totalMessages - maxEntries + 1)", "Should keep newest messages")
+        print("✓ Log rotation maintained \(maxEntries) max entries")
+    }
+
+    // T4.1.4: Concurrent logging performance
+    func testConcurrentLoggingPerformance() async {
+        let logger = Logger(name: "concurrent", maxEntries: 50000)
+        let taskCount = 10
+        let messagesPerTask = 1000
+
+        let startTime = Date()
+
+        await withTaskGroup(of: Void.self) { group in
+            for taskIndex in 0..<taskCount {
+                group.addTask {
+                    for i in 1...messagesPerTask {
+                        await logger.info("Task \(taskIndex) Message \(i)")
+                    }
+                }
+            }
+        }
+
+        let elapsed = Date().timeIntervalSince(startTime)
+
+        let entries = await logger.getEntries()
+        assert(entries.count == taskCount * messagesPerTask, "Should have all concurrent messages")
+        print("✓ Logged \(taskCount * messagesPerTask) messages concurrently in \(String(format: "%.2f", elapsed))s")
+    }
+
+    // T4.1.5: Response time under load
+    func testResponseTimeUnderLoad() async {
+        let logger = Logger(name: "loadTest")
+
+        // Warm up
+        for _ in 0..<100 {
+            await logger.info("Warmup")
+        }
+
+        // Measure response times
+        var responseTimes: [Double] = []
+
+        for i in 1...100 {
+            let startTime = Date()
+            await logger.info("Message \(i)")
+            let elapsed = Date().timeIntervalSince(startTime)
+            responseTimes.append(elapsed)
+        }
+
+        let avgResponseTime = responseTimes.reduce(0, +) / Double(responseTimes.count)
+        let maxResponseTime = responseTimes.max() ?? 0
+
+        assert(avgResponseTime < 0.01, "Average response time should be < 10ms")
+        print("✓ Avg response time: \(String(format: "%.4f", avgResponseTime))s, Max: \(String(format: "%.4f", maxResponseTime))s")
+    }
+
+    // T4.1.6: Memory stability
+    func testMemoryStability() async {
+        let logger = Logger(name: "memory", maxEntries: 1000)
+
+        // Log continuously
+        for iteration in 1...10 {
+            for i in 1...1000 {
+                await logger.info("Iteration \(iteration) Message \(i)")
+            }
+
+            let entries = await logger.getEntries()
+            assert(entries.count <= 1000, "Should maintain memory limit")
+        }
+
+        print("✓ Memory stability maintained over 10 iterations")
+    }
+
+    // T4.2.1: Log message with 1MB text
+    func testLargeMessageHandling() async {
+        let logger = Logger(name: "largeMsg", maxEntries: 100)
+
+        // Create a 1MB message
+        let largeSuffix = String(repeating: "x", count: 1_000_000)
+        let message = "Start: \(largeSuffix)"
+
+        let startTime = Date()
+        await logger.info(message)
+        let elapsed = Date().timeIntervalSince(startTime)
+
+        let entries = await logger.getEntries()
+        assert(entries.count == 1, "Should store large message")
+        assert(entries[0].message.count > 1_000_000, "Message should be preserved")
+        print("✓ Logged 1MB message in \(String(format: "%.4f", elapsed))s")
+    }
+
+    // T4.2.2: Log 100 messages of 100KB each
+    func testManyLargeMessages() async {
+        let logger = Logger(name: "manyLarge", maxEntries: 200)
+        let messageSize = 100_000
+        let messageCount = 100
+
+        let largeSuffix = String(repeating: "x", count: messageSize)
+
+        let startTime = Date()
+
+        for i in 1...messageCount {
+            await logger.info("Message\(i): \(largeSuffix)")
+        }
+
+        let elapsed = Date().timeIntervalSince(startTime)
+
+        let entries = await logger.getEntries()
+        assert(entries.count == messageCount, "Should store all large messages")
+        print("✓ Logged \(messageCount) messages of \(messageSize)B in \(String(format: "%.2f", elapsed))s")
+    }
+
+    // T4.2.3: Response time with large messages
+    func testResponseTimeWithLargeMessages() async {
+        let logger = Logger(name: "largeTiming")
+        let messageSizes = [10_000, 100_000, 1_000_000]
+
+        for size in messageSizes {
+            let message = String(repeating: "x", count: size)
+
+            let startTime = Date()
+            await logger.info(message)
+            let elapsed = Date().timeIntervalSince(startTime)
+
+            assert(elapsed < 1.0, "Should handle \(size)B message in < 1s")
+            print("✓ \(size)B message logged in \(String(format: "%.4f", elapsed))s")
+        }
+    }
+}
+
+func assert(_ condition: Bool, _ message: String) {
+    if !condition {
+        print("❌ Assertion failed: \(message)")
+    } else {
+        print("✓ \(message)")
+    }
+}

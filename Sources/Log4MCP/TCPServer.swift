@@ -16,20 +16,20 @@ private func createSocket() -> Int32 {
     #endif
 }
 
-final class TCPServer: Sendable {
+public final class TCPServer: Sendable {
     private let handler: MCPRequestHandler
     private let verbose: Bool
     private let host: String
     private let port: Int
 
-    init(handler: MCPRequestHandler, host: String, port: Int, verbose: Bool = false) {
+    public init(handler: MCPRequestHandler, host: String, port: Int, verbose: Bool = false) {
         self.handler = handler
         self.host = host
         self.port = port
         self.verbose = verbose
     }
 
-    func start() async throws {
+    public func start() async throws {
         if verbose {
             await logToStderr("Log4MCP: Starting TCP server on \(host):\(port)")
         }
@@ -202,7 +202,7 @@ final class TCPServer: Sendable {
 
 // MARK: - Socket Utilities
 
-enum SocketError: Error, LocalizedError {
+public enum SocketError: Error, LocalizedError {
     case socketCreationFailed
     case socketOptionFailed
     case invalidAddress
@@ -212,7 +212,7 @@ enum SocketError: Error, LocalizedError {
     case readFailed
     case writeFailed
 
-    var errorDescription: String? {
+    public var errorDescription: String? {
         switch self {
         case .socketCreationFailed:
             return "Failed to create socket"

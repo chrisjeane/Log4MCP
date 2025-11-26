@@ -6,11 +6,21 @@ import PackageDescription
 let package = Package(
     name: "Log4MCP",
     platforms: [
-        .macOS(.v10_15)
+        .macOS(.v12)
     ],
     targets: [
+        .target(
+            name: "Log4MCPLib",
+            path: "Sources/Log4MCP"
+        ),
         .executableTarget(
-            name: "Log4MCP"
+            name: "Log4MCP",
+            dependencies: ["Log4MCPLib"],
+            path: "Sources/Executable"
+        ),
+        .testTarget(
+            name: "Log4MCPTests",
+            dependencies: ["Log4MCPLib"]
         ),
     ]
 )

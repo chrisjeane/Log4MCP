@@ -1,13 +1,13 @@
 import Foundation
 
-enum MCPServerError: Error {
+public enum MCPServerError: Error {
     case invalidRequest(message: String)
     case methodNotFound(method: String)
     case invalidParams(message: String)
     case internalError(message: String)
     case parseError(message: String)
 
-    var errorCode: Int {
+    public var errorCode: Int {
         switch self {
         case .parseError:
             return -32700
@@ -22,7 +22,7 @@ enum MCPServerError: Error {
         }
     }
 
-    var errorMessage: String {
+    public var errorMessage: String {
         switch self {
         case .parseError(let msg):
             return "Parse error: \(msg)"
@@ -38,17 +38,17 @@ enum MCPServerError: Error {
     }
 }
 
-struct ErrorResponse: Codable {
-    let jsonrpc: String = "2.0"
-    let id: String
-    let error: ErrorInfo
+public struct ErrorResponse: Codable {
+    public let jsonrpc: String = "2.0"
+    public let id: String
+    public let error: ErrorInfo
 
-    struct ErrorInfo: Codable {
-        let code: Int
-        let message: String
-        let data: String?
+    public struct ErrorInfo: Codable {
+        public let code: Int
+        public let message: String
+        public let data: String?
 
-        init(code: Int, message: String, data: String? = nil) {
+        public init(code: Int, message: String, data: String? = nil) {
             self.code = code
             self.message = message
             self.data = data

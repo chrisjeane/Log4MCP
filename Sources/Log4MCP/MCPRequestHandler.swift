@@ -1,24 +1,24 @@
 import Foundation
 
-enum InitializationState {
+public enum InitializationState {
     case uninitialized
     case initialized
 }
 
-actor MCPRequestHandler {
+public actor MCPRequestHandler {
     private var loggers: [String: Logger] = [:]
     private var initializationState: InitializationState = .uninitialized
     private let encoder: JSONEncoder
     private let decoder: JSONDecoder
 
-    init() {
+    public init() {
         self.encoder = JSONEncoder()
         self.decoder = JSONDecoder()
         self.encoder.dateEncodingStrategy = .iso8601
         self.decoder.dateDecodingStrategy = .iso8601
     }
 
-    func handleRequest(_ requestData: Data) async -> Data? {
+    public func handleRequest(_ requestData: Data) async -> Data? {
         do {
             let request = try decoder.decode(MCPRequest.self, from: requestData)
             let response = try await processRequest(request)
@@ -42,7 +42,7 @@ actor MCPRequestHandler {
         return json["id"] as? String
     }
 
-    func handleRequest(_ requestString: String) async -> String? {
+    public func handleRequest(_ requestString: String) async -> String? {
         guard let requestData = requestString.data(using: .utf8) else {
             return nil
         }
