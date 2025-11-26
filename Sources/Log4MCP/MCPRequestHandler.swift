@@ -68,6 +68,9 @@ public actor MCPRequestHandler {
         case "system.capabilities":
             return await handleSystemCapabilities(request)
 
+        case "tools/list":
+            return await handleToolsList(request)
+
         default:
             break
         }
@@ -111,9 +114,13 @@ public actor MCPRequestHandler {
     }
 
     private func handleSystemInitialize(_ request: MCPRequest) async -> MCPResponse {
+        let capabilities = MCPCapabilities(
+            logging: MCPCapabilities.Logging(),
+            tools: MCPCapabilities.Tools(listChanged: false)
+        )
         let result = InitializeResult(
             protocolVersion: MCP_PROTOCOL_VERSION,
-            capabilities: MCPCapabilities(),
+            capabilities: capabilities,
             serverInfo: ServerInfo()
         )
 
@@ -206,6 +213,98 @@ public actor MCPRequestHandler {
             result: .success(SuccessResult(success: true)),
             error: nil
         )
+    }
+
+    private func handleToolsList(_ request: MCPRequest) async -> MCPResponse {
+        let tools = buildToolDefinitions()
+        let result = ToolsListResult(tools: tools)
+
+        return MCPResponse(
+            id: request.id,
+            result: .toolsList(result),
+            error: nil
+        )
+    }
+
+    private func buildToolDefinitions() -> [Tool] {
+        let logLevelEnum = ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"]
+
+        let logMessageTool = Tool(
+            name: "log.message",
+            description: "Log a message to a specific logger",
+            inputSchema: ToolInputSchema(
+                properties: [
+                    "loggerId": PropertySchema(
+                        type: "string",
+                        description: "The unique identifier for the logger instance"
+                    ),
+                    "level": PropertySchema(
+                        type: "string",
+                        description: "The log level for this message",
+                        enum: logLevelEnum
+                    ),
+                    "message": PropertySchema(
+                        type: "string",
+                        description: "The log message content"
+                    )
+                ],
+                required: ["loggerId", "level", "message"]
+            )
+        )
+
+        let getEntriesTool = Tool(
+            name: "log.getEntries",
+            description: "Retrieve logged entries, optionally filtered by log level",
+            inputSchema: ToolInputSchema(
+                properties: [
+                    "loggerId": PropertySchema(
+                        type: "string",
+                        description: "The unique identifier for the logger instance"
+                    ),
+                    "level": PropertySchema(
+                        type: "string",
+                        description: "Optional filter to only return entries at this log level or higher",
+                        enum: logLevelEnum
+                    )
+                ],
+                required: ["loggerId"]
+            )
+        )
+
+        let clearTool = Tool(
+            name: "log.clear",
+            description: "Clear all log entries for a specific logger",
+            inputSchema: ToolInputSchema(
+                properties: [
+                    "loggerId": PropertySchema(
+                        type: "string",
+                        description: "The unique identifier for the logger instance to clear"
+                    )
+                ],
+                required: ["loggerId"]
+            )
+        )
+
+        let setLevelTool = Tool(
+            name: "log.setLevel",
+            description: "Change the log level for a specific logger",
+            inputSchema: ToolInputSchema(
+                properties: [
+                    "loggerId": PropertySchema(
+                        type: "string",
+                        description: "The unique identifier for the logger instance"
+                    ),
+                    "level": PropertySchema(
+                        type: "string",
+                        description: "The new log level to set for this logger",
+                        enum: logLevelEnum
+                    )
+                ],
+                required: ["loggerId", "level"]
+            )
+        )
+
+        return [logMessageTool, getEntriesTool, clearTool, setLevelTool]
     }
 
     private func getOrCreateLogger(_ id: String) async -> Logger {

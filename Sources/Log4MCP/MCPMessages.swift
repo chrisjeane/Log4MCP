@@ -15,10 +15,20 @@ public struct MCPCapabilities: Codable, Sendable {
         }
     }
 
-    public let logging: Logging
+    public struct Tools: Codable, Sendable {
+        public let listChanged: Bool
 
-    public init(logging: Logging = Logging()) {
+        public init(listChanged: Bool = false) {
+            self.listChanged = listChanged
+        }
+    }
+
+    public let logging: Logging
+    public let tools: Tools
+
+    public init(logging: Logging = Logging(), tools: Tools = Tools()) {
         self.logging = logging
+        self.tools = tools
     }
 }
 
@@ -31,6 +41,58 @@ public struct ServerInfo: Codable, Sendable {
     public init(name: String = "Log4MCP", version: String = "2.0.0") {
         self.name = name
         self.version = version
+    }
+}
+
+// MARK: - Tool Definitions
+
+public struct Tool: Codable, Sendable {
+    public let name: String
+    public let description: String
+    public let inputSchema: ToolInputSchema
+
+    enum CodingKeys: String, CodingKey {
+        case name
+        case description
+        case inputSchema = "input_schema"
+    }
+
+    public init(name: String, description: String, inputSchema: ToolInputSchema) {
+        self.name = name
+        self.description = description
+        self.inputSchema = inputSchema
+    }
+}
+
+public struct ToolInputSchema: Codable, Sendable {
+    public let type: String
+    public let properties: [String: PropertySchema]
+    public let required: [String]
+
+    public init(type: String = "object", properties: [String: PropertySchema], required: [String]) {
+        self.type = type
+        self.properties = properties
+        self.required = required
+    }
+}
+
+public struct PropertySchema: Codable, Sendable {
+    public let type: String
+    public let description: String
+    public let `enum`: [String]?
+
+    public init(type: String, description: String, enum: [String]? = nil) {
+        self.type = type
+        self.description = description
+        self.`enum` = `enum`
+    }
+}
+
+public struct ToolsListResult: Codable, Sendable {
+    public let tools: [Tool]
+
+    public init(tools: [Tool]) {
+        self.tools = tools
     }
 }
 
@@ -216,6 +278,7 @@ public enum MCPResult: Codable, Sendable {
     case success(SuccessResult)
     case entries([LogEntry])
     case initialize(InitializeResult)
+    case toolsList(ToolsListResult)
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -226,6 +289,9 @@ public enum MCPResult: Codable, Sendable {
         } else if container.contains(.protocolVersion) {
             let result = try InitializeResult(from: decoder)
             self = .initialize(result)
+        } else if container.contains(.tools) {
+            let result = try ToolsListResult(from: decoder)
+            self = .toolsList(result)
         } else {
             let result = try SuccessResult(from: decoder)
             self = .success(result)
@@ -241,6 +307,8 @@ public enum MCPResult: Codable, Sendable {
             try container.encode(entries, forKey: .entries)
         case .initialize(let result):
             try result.encode(to: encoder)
+        case .toolsList(let result):
+            try result.encode(to: encoder)
         }
     }
 
@@ -250,6 +318,7 @@ public enum MCPResult: Codable, Sendable {
         case protocolVersion
         case capabilities
         case serverInfo
+        case tools
     }
 }
 
