@@ -12,7 +12,7 @@ public actor StdioTransport {
 
     public func start() async throws {
         if verbose {
-            await logToStderr("Log4MCP: Starting stdio transport")
+            await logToStderr("MCPServer: Starting stdio transport")
         }
 
         let outputStream = FileHandle.standardOutput
@@ -27,14 +27,14 @@ public actor StdioTransport {
 
             if let messageStr = String(data: messageData, encoding: .utf8) {
                 if verbose {
-                    await logToStderr("Log4MCP: Received: \(messageStr)")
+                    await logToStderr("MCPServer: Received: \(messageStr)")
                 }
             }
 
             if let responseData = await handler.handleRequest(messageData) {
                 if let responseStr = String(data: responseData, encoding: .utf8) {
                     if verbose {
-                        await logToStderr("Log4MCP: Sending: \(responseStr)")
+                        await logToStderr("MCPServer: Sending: \(responseStr)")
                     }
                 }
 
@@ -44,7 +44,7 @@ public actor StdioTransport {
         }
 
         if verbose {
-            await logToStderr("Log4MCP: Stdio transport closed")
+            await logToStderr("MCPServer: Stdio transport closed")
         }
     }
 

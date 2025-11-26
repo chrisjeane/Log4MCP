@@ -31,13 +31,13 @@ public final class TCPServer: Sendable {
 
     public func start() async throws {
         if verbose {
-            await logToStderr("Log4MCP: Starting TCP server on \(host):\(port)")
+            await logToStderr("MCPServer: Starting TCP server on \(host):\(port)")
         }
 
         let serverSocket = try createServerSocket()
 
         if verbose {
-            await logToStderr("Log4MCP: Listening on \(host):\(port)")
+            await logToStderr("MCPServer: Listening on \(host):\(port)")
         }
 
         // Accept connections indefinitely
@@ -63,7 +63,7 @@ public final class TCPServer: Sendable {
                 logToStderrSync("DEBUG: Handler queued, returning to accept loop")
             } catch {
                 logToStderrSync("DEBUG: acceptConnection threw error: \(error)")
-                await logToStderr("Log4MCP: Error accepting connection: \(error)")
+                await logToStderr("MCPServer: Error accepting connection: \(error)")
                 // Continue accepting new connections
             }
         }
@@ -136,7 +136,7 @@ public final class TCPServer: Sendable {
         logToStderrSync("DEBUG: handleClient called for socket \(socket)")
 
         if verbose {
-            await logToStderr("Log4MCP: Client connected")
+            await logToStderr("MCPServer: Client connected")
         }
 
         let inputStream = FileInputStream(socket: socket)
@@ -153,7 +153,7 @@ public final class TCPServer: Sendable {
                 if let messageStr = String(data: messageData, encoding: .utf8) {
                     logToStderrSync("DEBUG: readMessage() returned: \(messageStr)")
                     if verbose {
-                        await logToStderr("Log4MCP: Received: \(messageStr)")
+                        await logToStderr("MCPServer: Received: \(messageStr)")
                     }
                 }
 
@@ -162,7 +162,7 @@ public final class TCPServer: Sendable {
                     if let responseStr = String(data: responseData, encoding: .utf8) {
                         logToStderrSync("DEBUG: Got response: \(responseStr.prefix(100))")
                         if verbose {
-                            await logToStderr("Log4MCP: Sending: \(responseStr)")
+                            await logToStderr("MCPServer: Sending: \(responseStr)")
                         }
                     }
 
@@ -171,18 +171,18 @@ public final class TCPServer: Sendable {
                 } else {
                     logToStderrSync("DEBUG: handler returned nil")
                     if verbose {
-                        await logToStderr("Log4MCP: No response generated for request")
+                        await logToStderr("MCPServer: No response generated for request")
                     }
                 }
             } catch {
                 logToStderrSync("DEBUG: Exception: \(error)")
-                await logToStderr("Log4MCP: Client error: \(error)")
+                await logToStderr("MCPServer: Client error: \(error)")
                 break
             }
         }
 
         if verbose {
-            await logToStderr("Log4MCP: Client disconnected")
+            await logToStderr("MCPServer: Client disconnected")
         }
     }
 

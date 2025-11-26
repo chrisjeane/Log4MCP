@@ -1,5 +1,27 @@
 import Foundation
 
+// MARK: - Log Level Enum
+
+public enum LogLevel: String, Codable, Sendable {
+    case trace = "TRACE"
+    case debug = "DEBUG"
+    case info = "INFO"
+    case warn = "WARN"
+    case error = "ERROR"
+    case fatal = "FATAL"
+
+    public var sortOrder: Int {
+        switch self {
+        case .trace: return 0
+        case .debug: return 1
+        case .info: return 2
+        case .warn: return 3
+        case .error: return 4
+        case .fatal: return 5
+        }
+    }
+}
+
 // MARK: - MCP Protocol Constants
 
 public let MCP_PROTOCOL_VERSION = "2024-11-05"
@@ -38,7 +60,7 @@ public struct ServerInfo: Codable, Sendable {
     public let name: String
     public let version: String
 
-    public init(name: String = "Log4MCP", version: String = "2.0.0") {
+    public init(name: String = "MCPServer", version: String = "1.0.0") {
         self.name = name
         self.version = version
     }
@@ -140,28 +162,18 @@ public struct MCPRequest: Codable, Sendable {
 }
 
 public enum MCPParams: Codable, Sendable {
+    case none  // For methods that don't require params (system.*, tools/list, etc)
+
+    // Log4-specific cases
     case logMessage(LogMessageParams)
     case getEntries(GetEntriesParams)
     case clearLogs(ClearLogsParams)
     case setLogLevel(SetLogLevelParams)
-    case none  // For methods that don't require params (system.*, etc)
 
+    // Required for Codable protocol - this will be overridden by MCPRequest
     public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-
-        if container.contains(.message) {
-            let params = try LogMessageParams(from: decoder)
-            self = .logMessage(params)
-        } else if container.contains(.loggerId) {
-            let params = try GetEntriesParams(from: decoder)
-            self = .getEntries(params)
-        } else if container.contains(.level) {
-            let params = try SetLogLevelParams(from: decoder)
-            self = .setLogLevel(params)
-        } else {
-            let params = try ClearLogsParams(from: decoder)
-            self = .clearLogs(params)
-        }
+        // This should not be used directly - MCPRequest uses init(from:method:)
+        self = .none
     }
 
     public init(from decoder: Decoder, method: String) throws {
@@ -185,7 +197,7 @@ public enum MCPParams: Codable, Sendable {
             throw DecodingError.dataCorrupted(
                 DecodingError.Context(
                     codingPath: decoder.codingPath,
-                    debugDescription: "Unknown method type for params"
+                    debugDescription: "Unknown method type for params: \(method)"
                 )
             )
         }
@@ -213,6 +225,11 @@ public enum MCPParams: Codable, Sendable {
         case level
     }
 }
+
+// MARK: - Log4-Specific MCP Parameters
+
+// Forward declarations - these types are protocol-compatible
+// LogLevel and LogEntry are defined in Log4MCPLib/Logger.swift
 
 public struct LogMessageParams: Codable, Sendable {
     public let loggerId: String
@@ -276,17 +293,13 @@ public struct MCPResponse: Codable, Sendable {
 
 public enum MCPResult: Codable, Sendable {
     case success(SuccessResult)
-    case entries([LogEntry])
     case initialize(InitializeResult)
     case toolsList(ToolsListResult)
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
-        if container.contains(.entries) {
-            let entries = try container.decode([LogEntry].self, forKey: .entries)
-            self = .entries(entries)
-        } else if container.contains(.protocolVersion) {
+        if container.contains(.protocolVersion) {
             let result = try InitializeResult(from: decoder)
             self = .initialize(result)
         } else if container.contains(.tools) {
@@ -302,9 +315,6 @@ public enum MCPResult: Codable, Sendable {
         switch self {
         case .success(let result):
             try result.encode(to: encoder)
-        case .entries(let entries):
-            var container = encoder.container(keyedBy: CodingKeys.self)
-            try container.encode(entries, forKey: .entries)
         case .initialize(let result):
             try result.encode(to: encoder)
         case .toolsList(let result):
@@ -314,7 +324,6 @@ public enum MCPResult: Codable, Sendable {
 
     public enum CodingKeys: String, CodingKey, Sendable {
         case success
-        case entries
         case protocolVersion
         case capabilities
         case serverInfo

@@ -1,25 +1,14 @@
 import Foundation
+import MCPServer
 
-public enum LogLevel: String, Codable, Sendable {
-    case trace = "TRACE"
-    case debug = "DEBUG"
-    case info = "INFO"
-    case warn = "WARN"
-    case error = "ERROR"
-    case fatal = "FATAL"
-
+// Add convenience property to LogLevel
+extension LogLevel {
     public var priority: Int {
-        switch self {
-        case .trace: return 0
-        case .debug: return 1
-        case .info: return 2
-        case .warn: return 3
-        case .error: return 4
-        case .fatal: return 5
-        }
+        self.sortOrder
     }
 }
 
+// Extended LogEntry with additional fields
 public struct LogEntry: Codable, Sendable {
     public let timestamp: Date
     public let level: LogLevel

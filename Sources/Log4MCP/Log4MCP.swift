@@ -1,2 +1,8 @@
-// This file has been moved to Sources/Executable/main.swift for proper package structure
-// The executable entry point is now separated from the library code to enable testing.
+import MCPServer
+
+// Re-export MCPServer types for convenience
+public typealias LogLevel = MCPServer.LogLevel
+public typealias LogMessageParams = MCPServer.LogMessageParams
+public typealias GetEntriesParams = MCPServer.GetEntriesParams
+public typealias ClearLogsParams = MCPServer.ClearLogsParams
+public typealias SetLogLevelParams = MCPServer.SetLogLevelParams

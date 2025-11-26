@@ -1,5 +1,6 @@
 import Foundation
 import Log4MCPLib
+import MCPServer
 
 #if os(Linux)
 import Glibc
@@ -20,7 +21,8 @@ struct Log4MCPServer {
             logToStderr("  Default Level: \(config.defaultLogLevel.rawValue)")
         }
 
-        let handler = MCPRequestHandler()
+        let delegate = Log4MCPDelegate()
+        let handler = Log4MCPRequestHandler(delegate: delegate)
         setupSignalHandlers(verbose: config.verbose)
 
         do {

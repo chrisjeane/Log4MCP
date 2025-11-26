@@ -1,6 +1,7 @@
 import Foundation
 import Testing
 @testable import Log4MCPLib
+import MCPServer
 
 struct MCPMessagesTests {
 

@@ -1,4 +1,5 @@
 import Foundation
+import MCPServer
 
 public enum ServerMode {
     case tcp
