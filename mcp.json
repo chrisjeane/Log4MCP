@@ -1,0 +1,130 @@
+{
+  "mcpServers": {
+    "log4mcp": {
+      "command": "swift",
+      "args": [
+        "run",
+        "Log4MCP",
+        "--log-level",
+        "INFO"
+      ],
+      "env": {
+        "LOG_LEVEL": "INFO",
+        "MAX_ENTRIES": "1000",
+        "VERBOSE": "false"
+      }
+    }
+  },
+  "tools": {
+    "log.message": {
+      "description": "Log a message to a specific logger",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "loggerId": {
+            "type": "string",
+            "description": "The unique identifier for the logger instance"
+          },
+          "level": {
+            "type": "string",
+            "enum": [
+              "TRACE",
+              "DEBUG",
+              "INFO",
+              "WARN",
+              "ERROR",
+              "FATAL"
+            ],
+            "description": "The log level for this message"
+          },
+          "message": {
+            "type": "string",
+            "description": "The log message content"
+          }
+        },
+        "required": [
+          "loggerId",
+          "level",
+          "message"
+        ]
+      }
+    },
+    "log.getEntries": {
+      "description": "Retrieve logged entries, optionally filtered by log level",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "loggerId": {
+            "type": "string",
+            "description": "The unique identifier for the logger instance"
+          },
+          "level": {
+            "type": "string",
+            "enum": [
+              "TRACE",
+              "DEBUG",
+              "INFO",
+              "WARN",
+              "ERROR",
+              "FATAL"
+            ],
+            "description": "Optional filter to only return entries at this log level or higher"
+          }
+        },
+        "required": [
+          "loggerId"
+        ]
+      }
+    },
+    "log.clear": {
+      "description": "Clear all log entries for a specific logger",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "loggerId": {
+            "type": "string",
+            "description": "The unique identifier for the logger instance to clear"
+          }
+        },
+        "required": [
+          "loggerId"
+        ]
+      }
+    },
+    "log.setLevel": {
+      "description": "Change the log level for a specific logger",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "loggerId": {
+            "type": "string",
+            "description": "The unique identifier for the logger instance"
+          },
+          "level": {
+            "type": "string",
+            "enum": [
+              "TRACE",
+              "DEBUG",
+              "INFO",
+              "WARN",
+              "ERROR",
+              "FATAL"
+            ],
+            "description": "The new log level to set for this logger"
+          }
+        },
+        "required": [
+          "loggerId",
+          "level"
+        ]
+      }
+    },
+    "system.capabilities": {
+      "description": "Report server capabilities and supported log levels",
+      "input_schema": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  }
+}
