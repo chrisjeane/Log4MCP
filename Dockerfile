@@ -10,7 +10,7 @@ COPY Package.swift ./
 COPY Sources ./Sources
 
 # Build the application in release mode
-RUN swift build -c release
+RUN swift build -c release --skip-tests
 
 # Runtime stage
 FROM swift:6.2-jammy

@@ -23,7 +23,8 @@ let package = Package(
         ),
         .testTarget(
             name: "Log4MCPTests",
-            dependencies: ["Log4MCPLib", .product(name: "Testing", package: "swift-testing")]
+            dependencies: ["Log4MCPLib", .product(name: "Testing", package: "swift-testing")],
+            path: "Tests/Log4MCPTests"
         ),
     ]
 )
