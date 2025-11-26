@@ -6,7 +6,10 @@ import PackageDescription
 let package = Package(
     name: "Log4MCP",
     platforms: [
-        .macOS(.v12)
+        .macOS(.v15)
+    ],
+    dependencies: [
+        .package(url: "https://github.com/apple/swift-testing.git", from: "0.10.0")
     ],
     targets: [
         .target(
@@ -20,7 +23,7 @@ let package = Package(
         ),
         .testTarget(
             name: "Log4MCPTests",
-            dependencies: ["Log4MCPLib"]
+            dependencies: ["Log4MCPLib", .product(name: "Testing", package: "swift-testing")]
         ),
     ]
 )

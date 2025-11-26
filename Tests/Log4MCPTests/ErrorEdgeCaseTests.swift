@@ -1,12 +1,36 @@
 import Foundation
+import Testing
 @testable import Log4MCPLib
 
 // Phase 5: Error & Edge Case Tests
 
-final class ErrorEdgeCaseTests {
+struct ErrorEdgeCaseTests {
+
+    private func initializeHandler(_ handler: MCPRequestHandler) async {
+        let encoder = JSONEncoder()
+
+        // Send system.initialize
+        let initRequest = MCPRequest(
+            jsonrpc: "2.0",
+            id: "init",
+            method: "system.initialize",
+            params: .none
+        )
+        let _ = await handler.handleRequest(try! encoder.encode(initRequest))
+
+        // Send system.initialized notification
+        let initializedRequest = MCPRequest(
+            jsonrpc: "2.0",
+            id: nil,
+            method: "system.initialized",
+            params: .none
+        )
+        let _ = await handler.handleRequest(try! encoder.encode(initializedRequest))
+    }
 
     // T6.1: Malformed request tests
-    func testMissingJsonRpcField() {
+    @Test
+    func missingJsonRpcField() {
         let invalidJSON = """
         {
             "id": "1",
@@ -16,15 +40,17 @@ final class ErrorEdgeCaseTests {
         """
 
         let decoder = JSONDecoder()
+        var decodingFailed = false
         do {
             let _ = try decoder.decode(MCPRequest.self, from: invalidJSON.data(using: .utf8)!)
-            print("❌ Should have failed to decode request without jsonrpc")
         } catch {
-            print("✓ Correctly rejected request missing jsonrpc field")
+            decodingFailed = true
         }
+        #expect(decodingFailed)
     }
 
-    func testMissingMethodField() {
+    @Test
+    func missingMethodField() {
         let invalidJSON = """
         {
             "jsonrpc": "2.0",
@@ -34,63 +60,72 @@ final class ErrorEdgeCaseTests {
         """
 
         let decoder = JSONDecoder()
+        var decodingFailed = false
         do {
             let _ = try decoder.decode(MCPRequest.self, from: invalidJSON.data(using: .utf8)!)
-            print("❌ Should have failed to decode request without method")
         } catch {
-            print("✓ Correctly rejected request missing method field")
+            decodingFailed = true
         }
+        #expect(decodingFailed)
     }
 
-    func testEmptyJSON() {
+    @Test
+    func emptyJSON() {
         let invalidJSON = "{}"
 
         let decoder = JSONDecoder()
+        var decodingFailed = false
         do {
             let _ = try decoder.decode(MCPRequest.self, from: invalidJSON.data(using: .utf8)!)
-            print("❌ Should have failed to decode empty JSON")
         } catch {
-            print("✓ Correctly rejected empty JSON request")
+            decodingFailed = true
         }
+        #expect(decodingFailed)
     }
 
-    func testInvalidJSON() {
+    @Test
+    func invalidJSON() {
         let invalidJSON = "{invalid json"
 
         let decoder = JSONDecoder()
+        var decodingFailed = false
         do {
             let _ = try decoder.decode(MCPRequest.self, from: invalidJSON.data(using: .utf8)!)
-            print("❌ Should have failed to decode invalid JSON")
         } catch {
-            print("✓ Correctly rejected invalid JSON")
+            decodingFailed = true
         }
+        #expect(decodingFailed)
     }
 
     // T6.2: Invalid parameter tests
-    func testLogMessageWithEmptyLoggerId() async {
+    @Test
+    func logMessageWithEmptyLoggerId() async {
         let logger = Logger(name: "")
         await logger.info("Test")
         let entries = await logger.getEntries()
-        assert(entries.count == 1, "Should allow empty logger ID")
+        #expect(entries.count == 1)
     }
 
-    func testLogMessageWithEmptyMessage() async {
+    @Test
+    func logMessageWithEmptyMessage() async {
         let logger = Logger(name: "app")
         await logger.info("")
         let entries = await logger.getEntries()
-        assert(entries.count == 1, "Should allow empty message string")
-        assert(entries[0].message == "", "Message should be empty string")
+        #expect(entries.count == 1)
+        #expect(entries[0].message == "")
     }
 
-    func testLogMessageWithVeryLongLoggerId() async {
+    @Test
+    func logMessageWithVeryLongLoggerId() async {
         let longId = String(repeating: "a", count: 10000)
         let logger = Logger(name: longId)
         await logger.info("Test")
         let entries = await logger.getEntries()
-        assert(entries.count == 1, "Should handle very long logger ID")
+        #expect(entries.count == 1)
     }
 
-    func testLogMessageWithSpecialCharactersInId() async {
+    @Test
+    func logMessageWithSpecialCharactersInId() async {
         let specialIds = [
             "app-1",
             "app_1",
@@ -106,27 +141,30 @@ final class ErrorEdgeCaseTests {
             let logger = Logger(name: id)
             await logger.info("Test")
             let entries = await logger.getEntries()
-            assert(entries.count == 1, "Should handle special char in ID: \(id)")
+            #expect(entries.count == 1)
         }
     }
 
-    func testLogMessageWithUnicodeId() async {
+    @Test
+    func logMessageWithUnicodeId() async {
         let logger = Logger(name: "应用-アプリ-приложение")
         await logger.info("Test")
         let entries = await logger.getEntries()
-        assert(entries.count == 1, "Should handle unicode in logger ID")
+        #expect(entries.count == 1)
     }
 
     // T6.3: State edge cases
-    func testClearAndImmediateGetEntries() async {
+    @Test
+    func clearAndImmediateGetEntries() async {
         let logger = Logger(name: "app")
         await logger.info("Message")
         await logger.clear()
         let entries = await logger.getEntries()
-        assert(entries.isEmpty, "Entries should be empty after clear")
+        #expect(entries.isEmpty)
     }
 
-    func testSetLevelAndImmediateLog() async {
+    @Test
+    func setLevelAndImmediateLog() async {
         let logger = Logger(name: "app", level: .info)
 
         await logger.setLogLevel(.warn)
@@ -134,11 +172,12 @@ final class ErrorEdgeCaseTests {
         await logger.warn("This should pass")
 
         let entries = await logger.getEntries()
-        assert(entries.count == 1, "Should only have WARN message after level change")
-        assert(entries[0].level == .warn, "Entry should be WARN level")
+        #expect(entries.count == 1)
+        #expect(entries[0].level == .warn)
     }
 
-    func testLogAtMaximumEntries() async {
+    @Test
+    func logAtMaximumEntries() async {
         let maxEntries = 10
         let logger = Logger(name: "app", maxEntries: maxEntries)
 
@@ -148,10 +187,11 @@ final class ErrorEdgeCaseTests {
         }
 
         let entries = await logger.getEntries()
-        assert(entries.count == maxEntries, "Should have exactly max entries")
+        #expect(entries.count == maxEntries)
     }
 
-    func testLogOneMoreThanMaximumEntries() async {
+    @Test
+    func logOneMoreThanMaximumEntries() async {
         let maxEntries = 10
         let logger = Logger(name: "app", maxEntries: maxEntries)
 
@@ -161,12 +201,14 @@ final class ErrorEdgeCaseTests {
         }
 
         let entries = await logger.getEntries()
-        assert(entries.count == maxEntries, "Should maintain max entries limit")
-        assert(entries[0].message == "Message 2", "Should have removed oldest entry")
+        #expect(entries.count == maxEntries)
+        #expect(entries[0].message == "Message 2")
     }
 
-    func testNonExistentLoggerOperations() async {
+    @Test
+    func nonExistentLoggerOperations() async {
         let handler = MCPRequestHandler()
+        await initializeHandler(handler)
         let encoder = JSONEncoder()
         let decoder = JSONDecoder()
 
@@ -181,16 +223,18 @@ final class ErrorEdgeCaseTests {
         let responseData = await handler.handleRequest(try! encoder.encode(request))
         let response = try! decoder.decode(MCPResponse.self, from: responseData!)
 
-        assert(response.error == nil, "Should handle non-existent logger gracefully")
+        #expect(response.error == nil)
     }
 
     // T6.2: Invalid level tests
-    func testSetLevelWithInvalidLevel() async {
+    @Test
+    func setLevelWithValidLevels() async {
         let handler = MCPRequestHandler()
+        await initializeHandler(handler)
         let encoder = JSONEncoder()
 
-        // Try to set an invalid level
-        let params = SetLogLevelParams(loggerId: "app", level: "INVALID")
+        // Try to set with valid levels
+        let params = SetLogLevelParams(loggerId: "app", level: .warn)
         let request = MCPRequest(
             jsonrpc: "2.0",
             id: "1",
@@ -199,28 +243,31 @@ final class ErrorEdgeCaseTests {
         )
 
         let responseData = await handler.handleRequest(try! encoder.encode(request))
-        assert(responseData != nil, "Should handle invalid level somehow")
+        #expect(responseData != nil)
     }
 
     // T6.3: Boundary tests
-    func testMinimumLogLevel() async {
+    @Test
+    func minimumLogLevel() async {
         let logger = Logger(name: "app", level: .trace)
-        await logger.trace("Trace message")
+        await logger.log(level: .trace, message: "Trace message")
         let entries = await logger.getEntries()
-        assert(entries.count == 1, "Should accept TRACE level")
-        assert(entries[0].level == .trace, "Message should be TRACE")
+        #expect(entries.count == 1)
+        #expect(entries[0].level == .trace)
     }
 
-    func testMaximumLogLevel() async {
+    @Test
+    func maximumLogLevel() async {
         let logger = Logger(name: "app", level: .fatal)
         await logger.debug("Debug") // Should be filtered
         await logger.fatal("Fatal") // Should pass
         let entries = await logger.getEntries()
-        assert(entries.count == 1, "Should only accept FATAL at max level")
-        assert(entries[0].level == .fatal, "Message should be FATAL")
+        #expect(entries.count == 1)
+        #expect(entries[0].level == .fatal)
     }
 
-    func testAllLogLevelTransitions() async {
+    @Test
+    func allLogLevelTransitions() async {
         let logger = Logger(name: "app", level: .trace)
         let levels = [LogLevel.debug, .info, .warn, .error, .fatal]
 
@@ -230,10 +277,11 @@ final class ErrorEdgeCaseTests {
         }
 
         let entries = await logger.getEntries()
-        assert(entries.count >= 1, "Should handle level transitions")
+        #expect(entries.count >= 1)
     }
 
-    func testConcurrentClearAndLog() async {
+    @Test
+    func concurrentClearAndLog() async {
         let logger = Logger(name: "app", maxEntries: 1000)
 
         // Log initial messages
@@ -255,10 +303,11 @@ final class ErrorEdgeCaseTests {
 
         let entries = await logger.getEntries()
         // Due to race condition, we just verify it doesn't crash
-        assert(entries.count >= 0, "Should handle concurrent clear and log")
+        #expect(entries.count >= 0)
     }
 
-    func testMultipleRapidClears() async {
+    @Test
+    func multipleRapidClears() async {
         let logger = Logger(name: "app")
         await logger.info("Message")
 
@@ -267,13 +316,14 @@ final class ErrorEdgeCaseTests {
         }
 
         let entries = await logger.getEntries()
-        assert(entries.isEmpty, "Should handle multiple clears")
+        #expect(entries.isEmpty)
     }
 
-    func testFilteringAtBoundaries() async {
+    @Test
+    func filteringAtBoundaries() async {
         let logger = Logger(name: "app", level: .trace)
 
-        await logger.trace("TRACE")
+        await logger.log(level: .trace, message: "TRACE")
         await logger.debug("DEBUG")
         await logger.info("INFO")
         await logger.warn("WARN")
@@ -283,15 +333,7 @@ final class ErrorEdgeCaseTests {
         // Test filtering at each level
         for filterLevel in [LogLevel.trace, .debug, .info, .warn, .error, .fatal] {
             let entries = await logger.getEntries(level: filterLevel)
-            assert(entries.count == 1, "Should filter exactly one entry at level \(filterLevel)")
+            #expect(entries.count == 1)
         }
-    }
-}
-
-func assert(_ condition: Bool, _ message: String) {
-    if !condition {
-        print("❌ Assertion failed: \(message)")
-    } else {
-        print("✓ \(message)")
     }
 }

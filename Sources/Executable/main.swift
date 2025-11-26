@@ -7,7 +7,6 @@ import Glibc
 import Darwin
 #endif
 
-@main
 struct Log4MCPServer {
     static func main() async {
         let config = ServerConfig.fromCommandLine()

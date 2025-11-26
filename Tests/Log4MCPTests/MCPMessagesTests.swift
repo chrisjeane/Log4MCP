@@ -1,10 +1,12 @@
-import XCTest
+import Foundation
+import Testing
 @testable import Log4MCPLib
 
-final class MCPMessagesTests: XCTestCase {
+struct MCPMessagesTests {
 
     // T1.3.1: Encode LogEntry to JSON
-    func testEncodeLogEntry() throws {
+    @Test
+    func encodeLogEntry() throws {
         let entry = LogEntry(
             level: .info,
             message: "Test message",
@@ -19,13 +21,14 @@ final class MCPMessagesTests: XCTestCase {
         let jsonData = try encoder.encode(entry)
         let jsonString = String(data: jsonData, encoding: .utf8)
 
-        XCTAssertNotNil(jsonString)
-        XCTAssertTrue(jsonString?.contains("Test message") ?? false)
-        XCTAssertTrue(jsonString?.contains("INFO") ?? false)
+        #expect(jsonString != nil)
+        #expect(jsonString?.contains("Test message") ?? false)
+        #expect(jsonString?.contains("INFO") ?? false)
     }
 
     // T1.3.2: Decode LogEntry from JSON
-    func testDecodeLogEntry() throws {
+    @Test
+    func decodeLogEntry() throws {
         let jsonString = """
         {
             "timestamp": "2024-11-25T21:15:00Z",
@@ -43,18 +46,19 @@ final class MCPMessagesTests: XCTestCase {
         decoder.dateDecodingStrategy = .iso8601
         let entry = try decoder.decode(LogEntry.self, from: jsonString.data(using: .utf8)!)
 
-        XCTAssertEqual(entry.message, "Test message")
-        XCTAssertEqual(entry.level, .info)
-        XCTAssertEqual(entry.logger, "testLogger")
-        XCTAssertEqual(entry.line, 42)
-        XCTAssertEqual(entry.file, "test.swift")
+        #expect(entry.message == "Test message")
+        #expect(entry.level == .info)
+        #expect(entry.logger == "testLogger")
+        #expect(entry.line == 42)
+        #expect(entry.file == "test.swift")
     }
 
     // T1.3.3: Encode MCPRequest to JSON
-    func testEncodeMCPRequest() throws {
+    @Test
+    func encodeMCPRequest() throws {
         let params = LogMessageParams(
             loggerId: "myapp",
-            level: "INFO",
+            level: .info,
             message: "Hello"
         )
 
@@ -69,13 +73,14 @@ final class MCPMessagesTests: XCTestCase {
         let jsonData = try encoder.encode(request)
         let jsonString = String(data: jsonData, encoding: .utf8)
 
-        XCTAssertNotNil(jsonString)
-        XCTAssertTrue(jsonString?.contains("log.message") ?? false)
-        XCTAssertTrue(jsonString?.contains("2.0") ?? false)
+        #expect(jsonString != nil)
+        #expect(jsonString?.contains("log.message") ?? false)
+        #expect(jsonString?.contains("2.0") ?? false)
     }
 
     // T1.3.4: Decode MCPRequest from JSON
-    func testDecodeMCPRequest() throws {
+    @Test
+    func decodeMCPRequest() throws {
         let jsonString = """
         {
             "jsonrpc": "2.0",
@@ -92,16 +97,16 @@ final class MCPMessagesTests: XCTestCase {
         let decoder = JSONDecoder()
         let request = try decoder.decode(MCPRequest.self, from: jsonString.data(using: .utf8)!)
 
-        XCTAssertEqual(request.jsonrpc, "2.0")
-        XCTAssertEqual(request.id, "1")
-        XCTAssertEqual(request.method, "log.message")
+        #expect(request.jsonrpc == "2.0")
+        #expect(request.id == "1")
+        #expect(request.method == "log.message")
     }
 
     // T1.3.5: Encode MCPResponse with success
-    func testEncodeMCPResponseSuccess() throws {
+    @Test
+    func encodeMCPResponseSuccess() throws {
         let result = SuccessResult(success: true)
         let response = MCPResponse(
-            jsonrpc: "2.0",
             id: "1",
             result: .success(result),
             error: nil
@@ -111,15 +116,15 @@ final class MCPMessagesTests: XCTestCase {
         let jsonData = try encoder.encode(response)
         let jsonString = String(data: jsonData, encoding: .utf8)
 
-        XCTAssertNotNil(jsonString)
-        XCTAssertTrue(jsonString?.contains("true") ?? false)
+        #expect(jsonString != nil)
+        #expect(jsonString?.contains("true") ?? false)
     }
 
     // T1.3.6: Encode MCPResponse with error
-    func testEncodeMCPResponseError() throws {
+    @Test
+    func encodeMCPResponseError() throws {
         let error = MCPError(code: -32601, message: "Method not found")
         let response = MCPResponse(
-            jsonrpc: "2.0",
             id: "1",
             result: nil,
             error: error
@@ -129,13 +134,14 @@ final class MCPMessagesTests: XCTestCase {
         let jsonData = try encoder.encode(response)
         let jsonString = String(data: jsonData, encoding: .utf8)
 
-        XCTAssertNotNil(jsonString)
-        XCTAssertTrue(jsonString?.contains("Method not found") ?? false)
-        XCTAssertTrue(jsonString?.contains("-32601") ?? false)
+        #expect(jsonString != nil)
+        #expect(jsonString?.contains("Method not found") ?? false)
+        #expect(jsonString?.contains("-32601") ?? false)
     }
 
     // T1.3.8: ISO8601 timestamp format
-    func testISO8601TimestampFormat() throws {
+    @Test
+    func iso8601TimestampFormat() throws {
         let entry = LogEntry(
             level: .info,
             message: "Test",
@@ -153,86 +159,95 @@ final class MCPMessagesTests: XCTestCase {
         let range = NSRange(jsonString.startIndex..<jsonString.endIndex, in: jsonString)
         let matches = regex.matches(in: jsonString, range: range)
 
-        XCTAssertGreaterThan(matches.count, 0)
+        #expect(matches.count > 0)
     }
 
     // Test MCPError
-    func testMCPError() {
+    @Test
+    func mcpError() {
         let error = MCPError(code: -32700, message: "Parse error")
-        XCTAssertEqual(error.code, -32700)
-        XCTAssertEqual(error.message, "Parse error")
+        #expect(error.code == -32700)
+        #expect(error.message == "Parse error")
     }
 
     // Test ServerInfo
-    func testServerInfo() {
+    @Test
+    func serverInfo() {
         let serverInfo = ServerInfo(name: "Log4MCP", version: "1.0.0")
-        XCTAssertEqual(serverInfo.name, "Log4MCP")
-        XCTAssertEqual(serverInfo.version, "1.0.0")
+        #expect(serverInfo.name == "Log4MCP")
+        #expect(serverInfo.version == "1.0.0")
     }
 
     // Test MCPCapabilities
-    func testMCPCapabilities() {
-        let logging = MCPCapabilities.Logging(level: "DEBUG")
+    @Test
+    func mcpCapabilities() {
+        let logging = MCPCapabilities.Logging(level: true)
         let capabilities = MCPCapabilities(logging: logging)
-        XCTAssertEqual(capabilities.logging.level, "DEBUG")
+        #expect(capabilities.logging.level == true)
     }
 
     // Test LogMessageParams
-    func testLogMessageParams() {
+    @Test
+    func logMessageParams() {
         let params = LogMessageParams(
             loggerId: "app1",
-            level: "INFO",
+            level: .info,
             message: "Test message"
         )
-        XCTAssertEqual(params.loggerId, "app1")
-        XCTAssertEqual(params.level, "INFO")
-        XCTAssertEqual(params.message, "Test message")
+        #expect(params.loggerId == "app1")
+        #expect(params.level == .info)
+        #expect(params.message == "Test message")
     }
 
     // Test GetEntriesParams
-    func testGetEntriesParams() {
+    @Test
+    func getEntriesParams() {
         let params = GetEntriesParams(
             loggerId: "app1",
-            level: "INFO"
+            level: .info
         )
-        XCTAssertEqual(params.loggerId, "app1")
-        XCTAssertEqual(params.level, "INFO")
+        #expect(params.loggerId == "app1")
+        #expect(params.level == .info)
     }
 
     // Test ClearLogsParams
-    func testClearLogsParams() {
+    @Test
+    func clearLogsParams() {
         let params = ClearLogsParams(loggerId: "app1")
-        XCTAssertEqual(params.loggerId, "app1")
+        #expect(params.loggerId == "app1")
     }
 
     // Test SetLogLevelParams
-    func testSetLogLevelParams() {
+    @Test
+    func setLogLevelParams() {
         let params = SetLogLevelParams(
             loggerId: "app1",
-            level: "DEBUG"
+            level: .debug
         )
-        XCTAssertEqual(params.loggerId, "app1")
-        XCTAssertEqual(params.level, "DEBUG")
+        #expect(params.loggerId == "app1")
+        #expect(params.level == .debug)
     }
 
     // Test SuccessResult
-    func testSuccessResult() {
+    @Test
+    func successResult() {
         let result = SuccessResult(success: true)
-        XCTAssertTrue(result.success)
+        #expect(result.success)
     }
 
     // Test InitializeResult
-    func testInitializeResult() throws {
+    @Test
+    func initializeResult() throws {
         let serverInfo = ServerInfo(name: "Log4MCP", version: "1.0.0")
-        let capabilities = MCPCapabilities(logging: MCPCapabilities.Logging(level: "DEBUG"))
+        let capabilities = MCPCapabilities(logging: MCPCapabilities.Logging(level: true))
         let result = InitializeResult(
             protocolVersion: "2024-11-25",
             capabilities: capabilities,
             serverInfo: serverInfo
         )
 
-        XCTAssertEqual(result.protocolVersion, "2024-11-25")
-        XCTAssertEqual(result.capabilities.logging.level, "DEBUG")
-        XCTAssertEqual(result.serverInfo.name, "Log4MCP")
+        #expect(result.protocolVersion == "2024-11-25")
+        #expect(result.capabilities.logging.level == true)
+        #expect(result.serverInfo.name == "Log4MCP")
     }
 }

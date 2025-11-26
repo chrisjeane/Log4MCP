@@ -49,6 +49,12 @@ public struct MCPRequest: Codable, Sendable {
         case params
     }
 
+    public init(jsonrpc: String = "2.0", id: String?, method: String, params: MCPParams?) {
+        self.id = id
+        self.method = method
+        self.params = params
+    }
+
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.id = try container.decodeIfPresent(String.self, forKey: .id)  // Optional decode

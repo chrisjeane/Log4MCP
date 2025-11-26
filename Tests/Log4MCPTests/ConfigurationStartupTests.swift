@@ -1,66 +1,89 @@
 import Foundation
+import Testing
 @testable import Log4MCPLib
 
 // Phase 6: Configuration & Startup Tests
 
-final class ConfigurationStartupTests {
+struct ConfigurationStartupTests {
+
+    private func initializeHandler(_ handler: MCPRequestHandler) async {
+        let encoder = JSONEncoder()
+
+        // Send system.initialize
+        let initRequest = MCPRequest(
+            jsonrpc: "2.0",
+            id: "init",
+            method: "system.initialize",
+            params: .none
+        )
+        let _ = await handler.handleRequest(try! encoder.encode(initRequest))
+
+        // Send system.initialized notification
+        let initializedRequest = MCPRequest(
+            jsonrpc: "2.0",
+            id: nil,
+            method: "system.initialized",
+            params: .none
+        )
+        let _ = await handler.handleRequest(try! encoder.encode(initializedRequest))
+    }
 
     // T7.1: Configuration tests
-    func testAllServerModes() {
+    @Test func testAllServerModes() {
         let tcpConfig = ServerConfig(mode: .tcp)
         let stdioConfig = ServerConfig(mode: .stdio)
 
-        assert(tcpConfig.mode == .tcp, "Should support TCP mode")
-        assert(stdioConfig.mode == .stdio, "Should support Stdio mode")
+        #expect(tcpConfig.mode == .tcp)
+        #expect(stdioConfig.mode == .stdio)
         print("✓ Both server modes supported")
     }
 
-    func testPortBoundaries() {
+    @Test func testPortBoundaries() {
         let minPortConfig = ServerConfig(port: 1)
         let maxPortConfig = ServerConfig(port: 65535)
 
-        assert(minPortConfig.port == 1, "Should accept minimum port 1")
-        assert(maxPortConfig.port == 65535, "Should accept maximum port 65535")
+        #expect(minPortConfig.port == 1)
+        #expect(maxPortConfig.port == 65535)
     }
 
-    func testHostBoundaries() {
+    @Test func testHostBoundaries() {
         let localhostConfig = ServerConfig(host: "127.0.0.1")
         let anyConfig = ServerConfig(host: "0.0.0.0")
         let wildcardConfig = ServerConfig(host: "::")
 
-        assert(localhostConfig.host == "127.0.0.1", "Should accept localhost")
-        assert(anyConfig.host == "0.0.0.0", "Should accept any IPv4")
-        assert(wildcardConfig.host == "::", "Should accept IPv6 any")
+        #expect(localhostConfig.host == "127.0.0.1")
+        #expect(anyConfig.host == "0.0.0.0")
+        #expect(wildcardConfig.host == "::")
     }
 
-    func testMaxEntriesBoundaries() {
+    @Test func testMaxEntriesBoundaries() {
         let minConfig = ServerConfig(maxLogEntries: 1)
         let normalConfig = ServerConfig(maxLogEntries: 1000)
         let largeConfig = ServerConfig(maxLogEntries: 1_000_000)
 
-        assert(minConfig.maxLogEntries == 1, "Should accept minimum entries (1)")
-        assert(normalConfig.maxLogEntries == 1000, "Should accept normal entries")
-        assert(largeConfig.maxLogEntries == 1_000_000, "Should accept large entry counts")
+        #expect(minConfig.maxLogEntries == 1)
+        #expect(normalConfig.maxLogEntries == 1000)
+        #expect(largeConfig.maxLogEntries == 1_000_000)
     }
 
-    func testAllLogLevelConfigs() {
+    @Test func testAllLogLevelConfigs() {
         let levels = [LogLevel.trace, .debug, .info, .warn, .error, .fatal]
 
         for level in levels {
             let config = ServerConfig(defaultLogLevel: level)
-            assert(config.defaultLogLevel == level, "Should set default level to \(level.rawValue)")
+            #expect(config.defaultLogLevel == level)
         }
     }
 
-    func testVerboseMode() {
+    @Test func testVerboseMode() {
         let quietConfig = ServerConfig(verbose: false)
         let verboseConfig = ServerConfig(verbose: true)
 
-        assert(!quietConfig.verbose, "Quiet mode should be false by default")
-        assert(verboseConfig.verbose, "Verbose mode should be settable to true")
+        #expect(!quietConfig.verbose)
+        #expect(verboseConfig.verbose)
     }
 
-    func testConfigurationCombinations() {
+    @Test func testConfigurationCombinations() {
         let combinations = [
             (port: 3000, host: "0.0.0.0", mode: ServerMode.tcp),
             (port: 8080, host: "127.0.0.1", mode: ServerMode.tcp),
@@ -71,34 +94,37 @@ final class ConfigurationStartupTests {
 
         for combo in combinations {
             let config = ServerConfig(port: combo.port, host: combo.host, mode: combo.mode)
-            assert(config.port == combo.port, "Port should match")
-            assert(config.host == combo.host, "Host should match")
-            assert(config.mode == combo.mode, "Mode should match")
+            #expect(config.port == combo.port)
+            #expect(config.host == combo.host)
+            #expect(config.mode == combo.mode)
         }
 
         print("✓ All configuration combinations valid")
     }
 
     // T7.2: Startup tests
-    func testRequestHandlerInitialization() async {
+    @Test func testRequestHandlerInitialization() async {
         let handler = MCPRequestHandler()
-        assert(true, "MCPRequestHandler should initialize without error")
+        #expect(true)
     }
 
-    func testLoggerInitialization() async {
+    @Test func testLoggerInitialization() async {
         let logger = Logger(name: "test")
         let entries = await logger.getEntries()
-        assert(entries.isEmpty, "New logger should start with empty entries")
+        #expect(entries.isEmpty)
     }
 
-    func testMultipleHandlerInstances() async {
+    @Test func testMultipleHandlerInstances() async {
         let handler1 = MCPRequestHandler()
         let handler2 = MCPRequestHandler()
+
+        await initializeHandler(handler1)
+        await initializeHandler(handler2)
 
         // Verify they're independent
         let encoder = JSONEncoder()
 
-        let params = LogMessageParams(loggerId: "app", level: "INFO", message: "Test")
+        let params = LogMessageParams(loggerId: "app", level: .info, message: "Test")
         let request = MCPRequest(
             jsonrpc: "2.0",
             id: "1",
@@ -109,10 +135,10 @@ final class ConfigurationStartupTests {
         let _ = await handler1.handleRequest(try! encoder.encode(request))
         let _ = await handler2.handleRequest(try! encoder.encode(request))
 
-        assert(true, "Multiple handlers should work independently")
+        #expect(true)
     }
 
-    func testConfigurationPersistence() {
+    @Test func testConfigurationPersistence() {
         let config = ServerConfig(
             port: 9000,
             host: "127.0.0.1",
@@ -123,30 +149,30 @@ final class ConfigurationStartupTests {
         )
 
         // Verify all settings persist
-        assert(config.port == 9000, "Port should persist")
-        assert(config.host == "127.0.0.1", "Host should persist")
-        assert(config.maxLogEntries == 5000, "Max entries should persist")
-        assert(config.defaultLogLevel == .debug, "Log level should persist")
-        assert(config.verbose == true, "Verbose flag should persist")
-        assert(config.mode == .stdio, "Mode should persist")
+        #expect(config.port == 9000)
+        #expect(config.host == "127.0.0.1")
+        #expect(config.maxLogEntries == 5000)
+        #expect(config.defaultLogLevel == .debug)
+        #expect(config.verbose == true)
+        #expect(config.mode == .stdio)
 
         print("✓ Configuration persists correctly")
     }
 
-    func testDefaultConfigurationValues() {
+    @Test func testDefaultConfigurationValues() {
         let config = ServerConfig()
 
-        assert(config.port == 3000, "Default port should be 3000")
-        assert(config.host == "0.0.0.0", "Default host should be 0.0.0.0")
-        assert(config.maxLogEntries == 1000, "Default max entries should be 1000")
-        assert(config.defaultLogLevel == .info, "Default level should be INFO")
-        assert(config.verbose == false, "Verbose should default to false")
-        assert(config.mode == .tcp, "Mode should default to TCP")
+        #expect(config.port == 3000)
+        #expect(config.host == "0.0.0.0")
+        #expect(config.maxLogEntries == 1000)
+        #expect(config.defaultLogLevel == .info)
+        #expect(config.verbose == false)
+        #expect(config.mode == .tcp)
 
         print("✓ All defaults are correct")
     }
 
-    func testLogLevelPriorities() {
+    @Test func testLogLevelPriorities() {
         let trace = LogLevel.trace.priority
         let debug = LogLevel.debug.priority
         let info = LogLevel.info.priority
@@ -154,16 +180,16 @@ final class ConfigurationStartupTests {
         let error = LogLevel.error.priority
         let fatal = LogLevel.fatal.priority
 
-        assert(trace < debug, "TRACE should be lower priority than DEBUG")
-        assert(debug < info, "DEBUG should be lower priority than INFO")
-        assert(info < warn, "INFO should be lower priority than WARN")
-        assert(warn < error, "WARN should be lower priority than ERROR")
-        assert(error < fatal, "ERROR should be lower priority than FATAL")
+        #expect(trace < debug)
+        #expect(debug < info)
+        #expect(info < warn)
+        #expect(warn < error)
+        #expect(error < fatal)
 
         print("✓ Log level priorities are correct")
     }
 
-    func testInitializationUnderLoad() async {
+    @Test func testInitializationUnderLoad() async {
         let configs: [ServerConfig] = (1...100).map { i in
             ServerConfig(
                 port: 3000 + i,
@@ -171,48 +197,40 @@ final class ConfigurationStartupTests {
             )
         }
 
-        assert(configs.count == 100, "Should create 100 configurations")
+        #expect(configs.count == 100)
         print("✓ Bulk configuration creation successful")
     }
 
-    func testServerConfigEquality() {
+    @Test func testServerConfigEquality() {
         let config1 = ServerConfig(port: 3000, host: "0.0.0.0")
         let config2 = ServerConfig(port: 3000, host: "0.0.0.0")
         let config3 = ServerConfig(port: 8080, host: "0.0.0.0")
 
         // Note: ServerConfig should probably implement Equatable
         // This test verifies the configurations can be compared
-        assert(config1.port == config2.port, "Same ports should match")
-        assert(config1.host == config2.host, "Same hosts should match")
-        assert(config1.port != config3.port, "Different ports should differ")
+        #expect(config1.port == config2.port)
+        #expect(config1.host == config2.host)
+        #expect(config1.port != config3.port)
 
         print("✓ Configuration comparison works")
     }
 
-    func testModeSpecificDefaults() {
+    @Test func testModeSpecificDefaults() {
         let tcpConfig = ServerConfig(mode: .tcp)
         let stdioConfig = ServerConfig(mode: .stdio)
 
         // Both should have same default values except mode
-        assert(tcpConfig.port == stdioConfig.port, "Default port should be same for both modes")
-        assert(tcpConfig.host == stdioConfig.host, "Default host should be same for both modes")
-        assert(tcpConfig.mode != stdioConfig.mode, "Modes should differ")
+        #expect(tcpConfig.port == stdioConfig.port)
+        #expect(tcpConfig.host == stdioConfig.host)
+        #expect(tcpConfig.mode != stdioConfig.mode)
 
         print("✓ Mode-specific defaults work correctly")
     }
 
-    func testConfigurationImmutability() {
+    @Test func testConfigurationImmutability() {
         let config = ServerConfig(port: 3000)
         // Config is a struct with let properties, so it's immutable
-        assert(config.port == 3000, "Configuration should be immutable")
+        #expect(config.port == 3000)
         print("✓ Configuration is immutable")
-    }
-}
-
-func assert(_ condition: Bool, _ message: String) {
-    if !condition {
-        print("❌ Assertion failed: \(message)")
-    } else {
-        print("✓ \(message)")
     }
 }

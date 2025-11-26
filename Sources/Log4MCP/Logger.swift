@@ -42,7 +42,8 @@ public struct LogEntry: Codable, Sendable {
         self.level = level
         self.message = message
         self.logger = logger
-        self.thread = Thread.current.name ?? "main"
+        let threadName = Thread.current.name ?? ""
+        self.thread = threadName.isEmpty ? "main" : threadName
         self.file = (file as NSString).lastPathComponent
         self.line = line
         self.method = function

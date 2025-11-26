@@ -1,17 +1,54 @@
 import Foundation
+import Testing
 @testable import Log4MCPLib
 
 // Phase 2: Integration Tests - Protocol Compliance
 
-final class ProtocolTests {
+struct ProtocolTests {
+
+    private func createEncoder() -> JSONEncoder {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        return encoder
+    }
+
+    private func createDecoder() -> JSONDecoder {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return decoder
+    }
+
+    private func initializeHandler(_ handler: MCPRequestHandler) async {
+        let encoder = createEncoder()
+
+        // Send system.initialize
+        let initRequest = MCPRequest(
+            jsonrpc: "2.0",
+            id: "init",
+            method: "system.initialize",
+            params: .none
+        )
+        let _ = await handler.handleRequest(try! encoder.encode(initRequest))
+
+        // Send system.initialized notification
+        let initializedRequest = MCPRequest(
+            jsonrpc: "2.0",
+            id: nil,
+            method: "system.initialized",
+            params: .none
+        )
+        let _ = await handler.handleRequest(try! encoder.encode(initializedRequest))
+    }
 
     // T2.1.1: Complete log.message cycle
-    func testLogMessageCycle() async {
+    @Test
+    func logMessageCycle() async {
         let handler = MCPRequestHandler()
+        await initializeHandler(handler)
 
         let params = LogMessageParams(
             loggerId: "app",
-            level: "INFO",
+            level: .info,
             message: "Test message"
         )
 
@@ -22,26 +59,28 @@ final class ProtocolTests {
             params: .logMessage(params)
         )
 
-        let encoder = JSONEncoder()
+        let encoder = createEncoder()
         let requestData = try! encoder.encode(request)
 
         let responseData = await handler.handleRequest(requestData)
-        let decoder = JSONDecoder()
+        let decoder = createDecoder()
         let response = try! decoder.decode(MCPResponse.self, from: responseData!)
 
-        assert(response.jsonrpc == "2.0", "jsonrpc field should be 2.0")
-        assert(response.id == "1", "id should match request")
-        assert(response.error == nil, "error should be nil")
+        #expect(response.jsonrpc == "2.0")
+        #expect(response.id == "1")
+        #expect(response.error == nil)
     }
 
     // T2.1.2: Complete log.getEntries cycle
-    func testGetEntriesCycle() async {
+    @Test
+    func getEntriesCycle() async {
         let handler = MCPRequestHandler()
+        await initializeHandler(handler)
 
         // First log a message
         let logParams = LogMessageParams(
             loggerId: "app",
-            level: "INFO",
+            level: .info,
             message: "Test"
         )
         let logRequest = MCPRequest(
@@ -51,7 +90,7 @@ final class ProtocolTests {
             params: .logMessage(logParams)
         )
 
-        let encoder = JSONEncoder()
+        let encoder = createEncoder()
         let _ = await handler.handleRequest(try! encoder.encode(logRequest))
 
         // Then get entries
@@ -64,17 +103,19 @@ final class ProtocolTests {
         )
 
         let responseData = await handler.handleRequest(try! encoder.encode(getRequest))
-        let decoder = JSONDecoder()
+        let decoder = createDecoder()
         let response = try! decoder.decode(MCPResponse.self, from: responseData!)
 
-        assert(response.jsonrpc == "2.0", "jsonrpc should be 2.0")
-        assert(response.id == "2", "id should match request")
-        assert(response.error == nil, "error should be nil")
+        #expect(response.jsonrpc == "2.0")
+        #expect(response.id == "2")
+        #expect(response.error == nil)
     }
 
     // T2.1.3: Complete log.clear cycle
-    func testClearCycle() async {
+    @Test
+    func clearCycle() async {
         let handler = MCPRequestHandler()
+        await initializeHandler(handler)
 
         let params = ClearLogsParams(loggerId: "app")
         let request = MCPRequest(
@@ -84,21 +125,23 @@ final class ProtocolTests {
             params: .clearLogs(params)
         )
 
-        let encoder = JSONEncoder()
+        let encoder = createEncoder()
         let responseData = await handler.handleRequest(try! encoder.encode(request))
 
-        let decoder = JSONDecoder()
+        let decoder = createDecoder()
         let response = try! decoder.decode(MCPResponse.self, from: responseData!)
 
-        assert(response.jsonrpc == "2.0", "jsonrpc should be 2.0")
-        assert(response.error == nil, "error should be nil")
+        #expect(response.jsonrpc == "2.0")
+        #expect(response.error == nil)
     }
 
     // T2.1.4: Complete log.setLevel cycle
-    func testSetLevelCycle() async {
+    @Test
+    func setLevelCycle() async {
         let handler = MCPRequestHandler()
+        await initializeHandler(handler)
 
-        let params = SetLogLevelParams(loggerId: "app", level: "DEBUG")
+        let params = SetLogLevelParams(loggerId: "app", level: .debug)
         let request = MCPRequest(
             jsonrpc: "2.0",
             id: "1",
@@ -106,18 +149,19 @@ final class ProtocolTests {
             params: .setLogLevel(params)
         )
 
-        let encoder = JSONEncoder()
+        let encoder = createEncoder()
         let responseData = await handler.handleRequest(try! encoder.encode(request))
 
-        let decoder = JSONDecoder()
+        let decoder = createDecoder()
         let response = try! decoder.decode(MCPResponse.self, from: responseData!)
 
-        assert(response.jsonrpc == "2.0", "jsonrpc should be 2.0")
-        assert(response.error == nil, "error should be nil")
+        #expect(response.jsonrpc == "2.0")
+        #expect(response.error == nil)
     }
 
     // T2.1.5: Complete system.capabilities cycle
-    func testCapabilitiesCycle() async {
+    @Test
+    func capabilitiesCycle() async {
         let handler = MCPRequestHandler()
 
         let request = MCPRequest(
@@ -127,23 +171,25 @@ final class ProtocolTests {
             params: .none
         )
 
-        let encoder = JSONEncoder()
+        let encoder = createEncoder()
         let responseData = await handler.handleRequest(try! encoder.encode(request))
 
-        let decoder = JSONDecoder()
+        let decoder = createDecoder()
         let response = try! decoder.decode(MCPResponse.self, from: responseData!)
 
-        assert(response.jsonrpc == "2.0", "jsonrpc should be 2.0")
-        assert(response.error == nil, "error should be nil")
+        #expect(response.jsonrpc == "2.0")
+        #expect(response.error == nil)
     }
 
     // T2.1.6: Request ID preservation
-    func testRequestIDPreservation() async {
+    @Test
+    func requestIDPreservation() async {
         let handler = MCPRequestHandler()
+        await initializeHandler(handler)
 
         let params = LogMessageParams(
             loggerId: "app",
-            level: "INFO",
+            level: .info,
             message: "Test"
         )
 
@@ -157,26 +203,29 @@ final class ProtocolTests {
                 params: .logMessage(params)
             )
 
-            let encoder = JSONEncoder()
+            let encoder = createEncoder()
             let responseData = await handler.handleRequest(try! encoder.encode(request))
 
-            let decoder = JSONDecoder()
+            let decoder = createDecoder()
             let response = try! decoder.decode(MCPResponse.self, from: responseData!)
 
-            assert(response.id == testID, "Response ID should match request ID")
+            #expect(response.id == testID)
         }
     }
 
     // T2.1.7: Multiple sequential requests
-    func testSequentialRequests() async {
+    @Test
+    func sequentialRequests() async {
         let handler = MCPRequestHandler()
-        let encoder = JSONEncoder()
-        let decoder = JSONDecoder()
+        await initializeHandler(handler)
+
+        let encoder = createEncoder()
+        let decoder = createDecoder()
 
         for i in 1...5 {
             let params = LogMessageParams(
                 loggerId: "app",
-                level: "INFO",
+                level: .info,
                 message: "Message \(i)"
             )
 
@@ -190,23 +239,26 @@ final class ProtocolTests {
             let responseData = await handler.handleRequest(try! encoder.encode(request))
             let response = try! decoder.decode(MCPResponse.self, from: responseData!)
 
-            assert(response.id == String(i), "Sequential request IDs should match")
-            assert(response.error == nil, "Sequential requests should not error")
+            #expect(response.id == String(i))
+            #expect(response.error == nil)
         }
     }
 
     // T2.1.8: Multiple concurrent requests
-    func testConcurrentRequests() async {
+    @Test
+    func concurrentRequests() async {
         let handler = MCPRequestHandler()
-        let encoder = JSONEncoder()
-        let decoder = JSONDecoder()
+        await initializeHandler(handler)
+
+        let encoder = createEncoder()
+        let decoder = createDecoder()
 
         await withTaskGroup(of: (String, Bool).self) { group in
             for i in 1...5 {
                 group.addTask {
                     let params = LogMessageParams(
                         loggerId: "app\(i)",
-                        level: "INFO",
+                        level: .info,
                         message: "Message \(i)"
                     )
 
@@ -220,7 +272,7 @@ final class ProtocolTests {
                     let responseData = await handler.handleRequest(try! encoder.encode(request))
                     let response = try! decoder.decode(MCPResponse.self, from: responseData!)
 
-                    return (response.id, response.error == nil)
+                    return (response.id ?? "", response.error == nil)
                 }
             }
 
@@ -230,16 +282,7 @@ final class ProtocolTests {
                     successCount += 1
                 }
             }
-            assert(successCount == 5, "All concurrent requests should succeed")
+            #expect(successCount == 5)
         }
-    }
-}
-
-// Helper function for assertions
-func assert(_ condition: Bool, _ message: String) {
-    if !condition {
-        print("❌ Assertion failed: \(message)")
-    } else {
-        print("✓ \(message)")
     }
 }

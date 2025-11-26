@@ -1,19 +1,55 @@
 import Foundation
+import Testing
 @testable import Log4MCPLib
 
 // Phase 3: API Contract Tests
 
-final class APIContractTests {
+struct APIContractTests {
+
+    private func createEncoder() -> JSONEncoder {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        return encoder
+    }
+
+    private func createDecoder() -> JSONDecoder {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return decoder
+    }
+
+    private func initializeHandler(_ handler: MCPRequestHandler) async {
+        let encoder = createEncoder()
+
+        // Send system.initialize
+        let initRequest = MCPRequest(
+            jsonrpc: "2.0",
+            id: "init",
+            method: "system.initialize",
+            params: .none
+        )
+        let _ = await handler.handleRequest(try! encoder.encode(initRequest))
+
+        // Send system.initialized notification
+        let initializedRequest = MCPRequest(
+            jsonrpc: "2.0",
+            id: nil,
+            method: "system.initialized",
+            params: .none
+        )
+        let _ = await handler.handleRequest(try! encoder.encode(initializedRequest))
+    }
 
     // T3.1: log.message contract tests
-    func testLogMessageWithAllParams() async {
+    @Test func testLogMessageWithAllParams() async {
         let handler = MCPRequestHandler()
-        let encoder = JSONEncoder()
-        let decoder = JSONDecoder()
+        await initializeHandler(handler)
+        let encoder = createEncoder()
+        let decoder = createDecoder()
 
         let params = LogMessageParams(
             loggerId: "testApp",
-            level: "INFO",
+            level: .info,
             message: "Test message"
         )
 
@@ -27,16 +63,17 @@ final class APIContractTests {
         let responseData = await handler.handleRequest(try! encoder.encode(request))
         let response = try! decoder.decode(MCPResponse.self, from: responseData!)
 
-        assert(response.error == nil, "log.message should succeed with valid params")
+        #expect(response.error == nil)
     }
 
-    func testLogMessageResponseFormat() async {
+    @Test func testLogMessageResponseFormat() async {
         let handler = MCPRequestHandler()
-        let encoder = JSONEncoder()
+        await initializeHandler(handler)
+        let encoder = createEncoder()
 
         let params = LogMessageParams(
             loggerId: "app",
-            level: "INFO",
+            level: .info,
             message: "Test"
         )
 
@@ -50,13 +87,14 @@ final class APIContractTests {
         let responseData = await handler.handleRequest(try! encoder.encode(request))
         let responseString = String(data: responseData!, encoding: .utf8)!
 
-        assert(responseString.contains("success"), "Response should contain success field")
-        assert(responseString.contains("true"), "Success should be true")
+        #expect(responseString.contains("success"))
+        #expect(responseString.contains("true"))
     }
 
-    func testLogMessageWithSpecialCharacters() async {
+    @Test func testLogMessageWithSpecialCharacters() async {
         let handler = MCPRequestHandler()
-        let encoder = JSONEncoder()
+        await initializeHandler(handler)
+        let encoder = createEncoder()
 
         let specialMessages = [
             "Hello, World!",
@@ -71,7 +109,7 @@ final class APIContractTests {
         for message in specialMessages {
             let params = LogMessageParams(
                 loggerId: "app",
-                level: "INFO",
+                level: .info,
                 message: message
             )
 
@@ -83,21 +121,22 @@ final class APIContractTests {
             )
 
             let responseData = await handler.handleRequest(try! encoder.encode(request))
-            assert(responseData != nil, "Should handle: \(message)")
+            #expect(responseData != nil)
         }
     }
 
     // T3.2: log.getEntries contract tests
-    func testGetEntriesWithLevelFilter() async {
+    @Test func testGetEntriesWithLevelFilter() async {
         let handler = MCPRequestHandler()
-        let encoder = JSONEncoder()
-        let decoder = JSONDecoder()
+        await initializeHandler(handler)
+        let encoder = createEncoder()
+        let decoder = createDecoder()
 
         // Log messages at different levels
         let logParams = [
-            LogMessageParams(loggerId: "app", level: "INFO", message: "Info msg"),
-            LogMessageParams(loggerId: "app", level: "WARN", message: "Warn msg"),
-            LogMessageParams(loggerId: "app", level: "ERROR", message: "Error msg")
+            LogMessageParams(loggerId: "app", level: .info, message: "Info msg"),
+            LogMessageParams(loggerId: "app", level: .warn, message: "Warn msg"),
+            LogMessageParams(loggerId: "app", level: .error, message: "Error msg")
         ]
 
         for param in logParams {
@@ -111,7 +150,7 @@ final class APIContractTests {
         }
 
         // Get entries with INFO filter
-        let getParams = GetEntriesParams(loggerId: "app", level: "INFO")
+        let getParams = GetEntriesParams(loggerId: "app", level: .info)
         let getRequest = MCPRequest(
             jsonrpc: "2.0",
             id: "2",
@@ -122,13 +161,14 @@ final class APIContractTests {
         let responseData = await handler.handleRequest(try! encoder.encode(getRequest))
         let response = try! decoder.decode(MCPResponse.self, from: responseData!)
 
-        assert(response.error == nil, "getEntries should succeed with level filter")
+        #expect(response.error == nil)
     }
 
-    func testGetEntriesEmptyLogger() async {
+    @Test func testGetEntriesEmptyLogger() async {
         let handler = MCPRequestHandler()
-        let encoder = JSONEncoder()
-        let decoder = JSONDecoder()
+        await initializeHandler(handler)
+        let encoder = createEncoder()
+        let decoder = createDecoder()
 
         let params = GetEntriesParams(loggerId: "nonexistent", level: nil)
         let request = MCPRequest(
@@ -141,16 +181,17 @@ final class APIContractTests {
         let responseData = await handler.handleRequest(try! encoder.encode(request))
         let response = try! decoder.decode(MCPResponse.self, from: responseData!)
 
-        assert(response.error == nil, "getEntries should return empty for non-existent logger")
+        #expect(response.error == nil)
     }
 
-    func testGetEntriesResponseFormat() async {
+    @Test func testGetEntriesResponseFormat() async {
         let handler = MCPRequestHandler()
-        let encoder = JSONEncoder()
+        await initializeHandler(handler)
+        let encoder = createEncoder()
 
         let logParams = LogMessageParams(
             loggerId: "app",
-            level: "INFO",
+            level: .info,
             message: "Test"
         )
 
@@ -174,20 +215,21 @@ final class APIContractTests {
         let responseData = await handler.handleRequest(try! encoder.encode(getRequest))
         let responseString = String(data: responseData!, encoding: .utf8)!
 
-        assert(responseString.contains("entries"), "Response should contain entries field")
+        #expect(responseString.contains("entries"))
     }
 
     // T3.3: log.clear contract tests
-    func testClearRemovesAllEntries() async {
+    @Test func testClearRemovesAllEntries() async {
         let handler = MCPRequestHandler()
-        let encoder = JSONEncoder()
-        let decoder = JSONDecoder()
+        await initializeHandler(handler)
+        let encoder = createEncoder()
+        let decoder = createDecoder()
 
         // Log some messages
         for i in 1...3 {
             let params = LogMessageParams(
                 loggerId: "app",
-                level: "INFO",
+                level: .info,
                 message: "Message \(i)"
             )
 
@@ -224,16 +266,17 @@ final class APIContractTests {
         let responseData = await handler.handleRequest(try! encoder.encode(getRequest))
         let response = try! decoder.decode(MCPResponse.self, from: responseData!)
 
-        assert(response.error == nil, "getEntries after clear should succeed")
+        #expect(response.error == nil)
     }
 
-    func testClearDoesNotAffectOtherLoggers() async {
+    @Test func testClearDoesNotAffectOtherLoggers() async {
         let handler = MCPRequestHandler()
-        let encoder = JSONEncoder()
+        await initializeHandler(handler)
+        let encoder = createEncoder()
 
         // Log to two different loggers
-        let params1 = LogMessageParams(loggerId: "app1", level: "INFO", message: "Message 1")
-        let params2 = LogMessageParams(loggerId: "app2", level: "INFO", message: "Message 2")
+        let params1 = LogMessageParams(loggerId: "app1", level: .info, message: "Message 1")
+        let params2 = LogMessageParams(loggerId: "app2", level: .info, message: "Message 2")
 
         let request1 = MCPRequest(
             jsonrpc: "2.0",
@@ -263,15 +306,16 @@ final class APIContractTests {
 
         let _ = await handler.handleRequest(try! encoder.encode(clearRequest))
 
-        assert(true, "Clearing app1 should not affect app2")
+        #expect(true)
     }
 
     // T3.4: log.setLevel contract tests
-    func testSetLevelChangesFiltering() async {
+    @Test func testSetLevelChangesFiltering() async {
         let handler = MCPRequestHandler()
-        let encoder = JSONEncoder()
+        await initializeHandler(handler)
+        let encoder = createEncoder()
 
-        let params = SetLogLevelParams(loggerId: "app", level: "WARN")
+        let params = SetLogLevelParams(loggerId: "app", level: .warn)
         let request = MCPRequest(
             jsonrpc: "2.0",
             id: "1",
@@ -280,15 +324,16 @@ final class APIContractTests {
         )
 
         let responseData = await handler.handleRequest(try! encoder.encode(request))
-        assert(responseData != nil, "setLevel should succeed")
+        #expect(responseData != nil)
     }
 
-    func testSetLevelWithAllLevels() async {
+    @Test func testSetLevelWithAllLevels() async {
         let handler = MCPRequestHandler()
-        let encoder = JSONEncoder()
-        let decoder = JSONDecoder()
+        await initializeHandler(handler)
+        let encoder = createEncoder()
+        let decoder = createDecoder()
 
-        let levels = ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"]
+        let levels: [LogLevel] = [.trace, .debug, .info, .warn, .error, .fatal]
 
         for level in levels {
             let params = SetLogLevelParams(loggerId: "app", level: level)
@@ -302,15 +347,15 @@ final class APIContractTests {
             let responseData = await handler.handleRequest(try! encoder.encode(request))
             let response = try! decoder.decode(MCPResponse.self, from: responseData!)
 
-            assert(response.error == nil, "setLevel should work for: \(level)")
+            #expect(response.error == nil)
         }
     }
 
     // T3.5: system.capabilities contract tests
-    func testCapabilitiesReturnsStructure() async {
+    @Test func testCapabilitiesReturnsStructure() async {
         let handler = MCPRequestHandler()
-        let encoder = JSONEncoder()
-        let decoder = JSONDecoder()
+        let encoder = createEncoder()
+        let decoder = createDecoder()
 
         let request = MCPRequest(
             jsonrpc: "2.0",
@@ -322,13 +367,13 @@ final class APIContractTests {
         let responseData = await handler.handleRequest(try! encoder.encode(request))
         let response = try! decoder.decode(MCPResponse.self, from: responseData!)
 
-        assert(response.error == nil, "capabilities should return without error")
-        assert(response.result != nil, "capabilities should return result")
+        #expect(response.error == nil)
+        #expect(response.result != nil)
     }
 
-    func testCapabilitiesIncludesMethods() async {
+    @Test func testCapabilitiesIncludesMethods() async {
         let handler = MCPRequestHandler()
-        let encoder = JSONEncoder()
+        let encoder = createEncoder()
 
         let request = MCPRequest(
             jsonrpc: "2.0",
@@ -347,14 +392,6 @@ final class APIContractTests {
             // This is just checking the response structure is valid
         }
 
-        assert(!responseString.isEmpty, "capabilities response should not be empty")
-    }
-}
-
-func assert(_ condition: Bool, _ message: String) {
-    if !condition {
-        print("❌ Assertion failed: \(message)")
-    } else {
-        print("✓ \(message)")
+        #expect(!responseString.isEmpty)
     }
 }
