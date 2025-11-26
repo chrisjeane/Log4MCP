@@ -9,13 +9,10 @@ let package = Package(
         .macOS(.v15)
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-testing.git", from: "0.10.0")
+        .package(url: "https://github.com/apple/swift-testing.git", from: "0.10.0"),
+        .package(url: "https://github.com/chrisjeane/MCPServer.git", from: "1.0.0")
     ],
     targets: [
-        .target(
-            name: "MCPServer",
-            path: "Sources/MCPServer"
-        ),
         .target(
             name: "Log4MCPLib",
             dependencies: ["MCPServer"],
@@ -28,7 +25,7 @@ let package = Package(
         ),
         .testTarget(
             name: "Log4MCPTests",
-            dependencies: ["Log4MCPLib", "MCPServer", .product(name: "Testing", package: "swift-testing")],
+            dependencies: ["Log4MCPLib", .product(name: "Testing", package: "swift-testing")],
             path: "Tests/Log4MCPTests"
         ),
     ]
