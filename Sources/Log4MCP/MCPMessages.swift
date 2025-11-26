@@ -178,7 +178,7 @@ public enum MCPParams: Codable, Sendable {
         case "log.clear":
             let params = try ClearLogsParams(from: decoder)
             self = .clearLogs(params)
-        case "system.initialize", "system.capabilities", "system.initialized":
+        case "system.initialize", "system.capabilities", "system.initialized", "tools/list":
             // These methods don't require params
             self = .none
         default:

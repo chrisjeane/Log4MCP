@@ -394,4 +394,66 @@ struct APIContractTests {
 
         #expect(!responseString.isEmpty)
     }
+
+    // T3.6: tools/list contract tests
+    @Test func testToolsListReturnsTools() async {
+        let handler = MCPRequestHandler()
+        let encoder = createEncoder()
+        let decoder = createDecoder()
+
+        let request = MCPRequest(
+            jsonrpc: "2.0",
+            id: "1",
+            method: "tools/list",
+            params: .none
+        )
+
+        let responseData = await handler.handleRequest(try! encoder.encode(request))
+        let response = try! decoder.decode(MCPResponse.self, from: responseData!)
+
+        #expect(response.error == nil)
+        #expect(response.result != nil)
+    }
+
+    @Test func testToolsListContainsAllTools() async {
+        let handler = MCPRequestHandler()
+        let encoder = createEncoder()
+
+        let request = MCPRequest(
+            jsonrpc: "2.0",
+            id: "1",
+            method: "tools/list",
+            params: .none
+        )
+
+        let responseData = await handler.handleRequest(try! encoder.encode(request))
+        let responseString = String(data: responseData!, encoding: .utf8)!
+
+        // Verify response contains all expected tools
+        let expectedTools = ["log.message", "log.getEntries", "log.clear", "log.setLevel"]
+        for tool in expectedTools {
+            #expect(responseString.contains(tool), "Response should contain tool: \(tool)")
+        }
+    }
+
+    @Test func testToolsListResponseFormat() async {
+        let handler = MCPRequestHandler()
+        let encoder = createEncoder()
+
+        let request = MCPRequest(
+            jsonrpc: "2.0",
+            id: "1",
+            method: "tools/list",
+            params: .none
+        )
+
+        let responseData = await handler.handleRequest(try! encoder.encode(request))
+        let responseString = String(data: responseData!, encoding: .utf8)!
+
+        // Verify JSON structure
+        #expect(responseString.contains("\"jsonrpc\""))
+        #expect(responseString.contains("\"id\""))
+        #expect(responseString.contains("\"result\""))
+        #expect(responseString.contains("\"tools\""))
+    }
 }
