@@ -10,7 +10,9 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-testing.git", from: "0.10.0"),
-        .package(url: "https://github.com/chrisjeane/MCPServer.git", from: "1.0.0")
+        // For development: use local path
+        // For production: replace with .package(url: "https://github.com/chrisjeane/MCPServer.git", branch: "main")
+        .package(path: "../MCPServer")
     ],
     targets: [
         .target(
