@@ -40,6 +40,8 @@ public struct LogEntry: Codable, Sendable {
 }
 
 public actor Logger {
+    nonisolated(unsafe) private static let iso8601Formatter = ISO8601DateFormatter()
+
     private let name: String
     private var level: LogLevel
     private var entries: [LogEntry] = []
@@ -113,8 +115,12 @@ public actor Logger {
     }
 
     private func printEntry(_ entry: LogEntry) {
-        let timestamp = ISO8601DateFormatter().string(from: entry.timestamp)
+        let timestamp = Logger.iso8601Formatter.string(from: entry.timestamp)
         let logLine = "[\(timestamp)] [\(entry.level.rawValue)] [\(entry.logger)] \(entry.file):\(entry.line) - \(entry.message)"
-        print(logLine)
+
+        // Only log to stderr, never stdout in stdio mode
+        if let data = "\(logLine)\n".data(using: .utf8) {
+            FileHandle.standardError.write(data)
+        }
     }
 }

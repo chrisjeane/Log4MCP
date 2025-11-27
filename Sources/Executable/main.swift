@@ -9,6 +9,8 @@ import Darwin
 #endif
 
 struct Log4MCPServer {
+    nonisolated(unsafe) private static var signalSources: [DispatchSourceSignal] = []
+
     static func main() async {
         let config = ServerConfig.fromCommandLine()
 
@@ -21,7 +23,7 @@ struct Log4MCPServer {
             logToStderr("  Default Level: \(config.defaultLogLevel.rawValue)")
         }
 
-        let delegate = Log4MCPDelegate()
+        let delegate = Log4MCPDelegate(config: config)
         let handler = Log4MCPRequestHandler(delegate: delegate)
         setupSignalHandlers(verbose: config.verbose)
 
@@ -42,6 +44,10 @@ struct Log4MCPServer {
     }
 
     private static func setupSignalHandlers(verbose: Bool) {
+        // Ignore default signal handlers
+        signal(SIGTERM, SIG_IGN)
+        signal(SIGINT, SIG_IGN)
+
         let signalSource = DispatchSource.makeSignalSource(signal: SIGTERM, queue: .main)
         signalSource.setEventHandler {
             if verbose {
@@ -50,6 +56,7 @@ struct Log4MCPServer {
             exit(0)
         }
         signalSource.resume()
+        signalSources.append(signalSource)  // Keep alive
 
         let intSignalSource = DispatchSource.makeSignalSource(signal: SIGINT, queue: .main)
         intSignalSource.setEventHandler {
@@ -59,6 +66,7 @@ struct Log4MCPServer {
             exit(0)
         }
         intSignalSource.resume()
+        signalSources.append(intSignalSource)  // Keep alive
     }
 
     private static func logToStderr(_ message: String) {

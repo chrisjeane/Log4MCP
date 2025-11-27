@@ -1,12 +1,12 @@
 import Foundation
 import MCPServer
 
-public enum ServerMode {
+public enum ServerMode: Sendable {
     case tcp
     case stdio
 }
 
-public struct ServerConfig {
+public struct ServerConfig: Sendable {
     public let port: Int
     public let host: String
     public let maxLogEntries: Int
