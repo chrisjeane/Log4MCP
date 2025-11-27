@@ -182,9 +182,9 @@ struct MCPMessagesTests {
     // Test MCPCapabilities
     @Test
     func mcpCapabilities() {
-        let logging = MCPCapabilities.Logging(level: true)
+        let logging = MCPCapabilities.Logging()
         let capabilities = MCPCapabilities(logging: logging)
-        #expect(capabilities.logging.level == true)
+        #expect(capabilities.logging != nil)
     }
 
     // Test LogMessageParams
@@ -240,7 +240,7 @@ struct MCPMessagesTests {
     @Test
     func initializeResult() throws {
         let serverInfo = ServerInfo(name: "Log4MCP", version: "1.0.0")
-        let capabilities = MCPCapabilities(logging: MCPCapabilities.Logging(level: true))
+        let capabilities = MCPCapabilities(logging: MCPCapabilities.Logging())
         let result = InitializeResult(
             protocolVersion: "2024-11-25",
             capabilities: capabilities,
@@ -248,7 +248,7 @@ struct MCPMessagesTests {
         )
 
         #expect(result.protocolVersion == "2024-11-25")
-        #expect(result.capabilities.logging.level == true)
+        #expect(result.capabilities.logging != nil)
         #expect(result.serverInfo.name == "Log4MCP")
     }
 }

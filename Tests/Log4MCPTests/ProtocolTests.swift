@@ -7,6 +7,19 @@ import MCPServer
 
 struct ProtocolTests {
 
+    private func createHandler() -> MCPRequestHandler {
+        let config = ServerConfig(
+            port: 3000,
+            host: "localhost",
+            maxLogEntries: 1000,
+            defaultLogLevel: .info,
+            verbose: false,
+            mode: .tcp
+        )
+        let delegate = Log4MCPDelegate(config: config)
+        return MCPRequestHandler(delegate: delegate)
+    }
+
     private func createEncoder() -> JSONEncoder {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
@@ -26,7 +39,7 @@ struct ProtocolTests {
         let initRequest = MCPRequest(
             jsonrpc: "2.0",
             id: "init",
-            method: "system.initialize",
+            method: "initialize",
             params: .none
         )
         let _ = await handler.handleRequest(try! encoder.encode(initRequest))
@@ -35,7 +48,7 @@ struct ProtocolTests {
         let initializedRequest = MCPRequest(
             jsonrpc: "2.0",
             id: nil,
-            method: "system.initialized",
+            method: "initialized",
             params: .none
         )
         let _ = await handler.handleRequest(try! encoder.encode(initializedRequest))
@@ -44,7 +57,7 @@ struct ProtocolTests {
     // T2.1.1: Complete log.message cycle
     @Test
     func logMessageCycle() async {
-        let handler = MCPRequestHandler()
+        let handler = createHandler()
         await initializeHandler(handler)
 
         let params = LogMessageParams(
@@ -75,7 +88,7 @@ struct ProtocolTests {
     // T2.1.2: Complete log.getEntries cycle
     @Test
     func getEntriesCycle() async {
-        let handler = MCPRequestHandler()
+        let handler = createHandler()
         await initializeHandler(handler)
 
         // First log a message
@@ -115,7 +128,7 @@ struct ProtocolTests {
     // T2.1.3: Complete log.clear cycle
     @Test
     func clearCycle() async {
-        let handler = MCPRequestHandler()
+        let handler = createHandler()
         await initializeHandler(handler)
 
         let params = ClearLogsParams(loggerId: "app")
@@ -139,7 +152,7 @@ struct ProtocolTests {
     // T2.1.4: Complete log.setLevel cycle
     @Test
     func setLevelCycle() async {
-        let handler = MCPRequestHandler()
+        let handler = createHandler()
         await initializeHandler(handler)
 
         let params = SetLogLevelParams(loggerId: "app", level: .debug)
@@ -160,15 +173,15 @@ struct ProtocolTests {
         #expect(response.error == nil)
     }
 
-    // T2.1.5: Complete system.capabilities cycle
+    // T2.1.5: Complete initialize cycle
     @Test
     func capabilitiesCycle() async {
-        let handler = MCPRequestHandler()
+        let handler = createHandler()
 
         let request = MCPRequest(
             jsonrpc: "2.0",
             id: "1",
-            method: "system.capabilities",
+            method: "initialize",
             params: .none
         )
 
@@ -185,7 +198,7 @@ struct ProtocolTests {
     // T2.1.6: Request ID preservation
     @Test
     func requestIDPreservation() async {
-        let handler = MCPRequestHandler()
+        let handler = createHandler()
         await initializeHandler(handler)
 
         let params = LogMessageParams(
@@ -217,7 +230,7 @@ struct ProtocolTests {
     // T2.1.7: Multiple sequential requests
     @Test
     func sequentialRequests() async {
-        let handler = MCPRequestHandler()
+        let handler = createHandler()
         await initializeHandler(handler)
 
         let encoder = createEncoder()
@@ -248,7 +261,7 @@ struct ProtocolTests {
     // T2.1.8: Multiple concurrent requests
     @Test
     func concurrentRequests() async {
-        let handler = MCPRequestHandler()
+        let handler = createHandler()
         await initializeHandler(handler)
 
         let encoder = createEncoder()

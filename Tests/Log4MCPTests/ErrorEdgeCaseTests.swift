@@ -7,6 +7,19 @@ import MCPServer
 
 struct ErrorEdgeCaseTests {
 
+    private func createHandler() -> MCPRequestHandler {
+        let config = ServerConfig(
+            port: 3000,
+            host: "localhost",
+            maxLogEntries: 1000,
+            defaultLogLevel: .info,
+            verbose: false,
+            mode: .tcp
+        )
+        let delegate = Log4MCPDelegate(config: config)
+        return MCPRequestHandler(delegate: delegate)
+    }
+
     private func initializeHandler(_ handler: MCPRequestHandler) async {
         let encoder = JSONEncoder()
 
@@ -14,7 +27,7 @@ struct ErrorEdgeCaseTests {
         let initRequest = MCPRequest(
             jsonrpc: "2.0",
             id: "init",
-            method: "system.initialize",
+            method: "initialize",
             params: .none
         )
         let _ = await handler.handleRequest(try! encoder.encode(initRequest))
@@ -23,7 +36,7 @@ struct ErrorEdgeCaseTests {
         let initializedRequest = MCPRequest(
             jsonrpc: "2.0",
             id: nil,
-            method: "system.initialized",
+            method: "initialized",
             params: .none
         )
         let _ = await handler.handleRequest(try! encoder.encode(initializedRequest))
@@ -208,7 +221,7 @@ struct ErrorEdgeCaseTests {
 
     @Test
     func nonExistentLoggerOperations() async {
-        let handler = MCPRequestHandler()
+        let handler = createHandler()
         await initializeHandler(handler)
         let encoder = JSONEncoder()
         let decoder = JSONDecoder()
@@ -230,7 +243,7 @@ struct ErrorEdgeCaseTests {
     // T6.2: Invalid level tests
     @Test
     func setLevelWithValidLevels() async {
-        let handler = MCPRequestHandler()
+        let handler = createHandler()
         await initializeHandler(handler)
         let encoder = JSONEncoder()
 

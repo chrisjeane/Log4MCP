@@ -7,6 +7,19 @@ import MCPServer
 
 struct APIContractTests {
 
+    private func createHandler() -> MCPRequestHandler {
+        let config = ServerConfig(
+            port: 3000,
+            host: "localhost",
+            maxLogEntries: 1000,
+            defaultLogLevel: .info,
+            verbose: false,
+            mode: .tcp
+        )
+        let delegate = Log4MCPDelegate(config: config)
+        return MCPRequestHandler(delegate: delegate)
+    }
+
     private func createEncoder() -> JSONEncoder {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
@@ -26,7 +39,7 @@ struct APIContractTests {
         let initRequest = MCPRequest(
             jsonrpc: "2.0",
             id: "init",
-            method: "system.initialize",
+            method: "initialize",
             params: .none
         )
         let _ = await handler.handleRequest(try! encoder.encode(initRequest))
@@ -35,7 +48,7 @@ struct APIContractTests {
         let initializedRequest = MCPRequest(
             jsonrpc: "2.0",
             id: nil,
-            method: "system.initialized",
+            method: "initialized",
             params: .none
         )
         let _ = await handler.handleRequest(try! encoder.encode(initializedRequest))
@@ -43,7 +56,7 @@ struct APIContractTests {
 
     // T3.1: log.message contract tests
     @Test func testLogMessageWithAllParams() async {
-        let handler = MCPRequestHandler()
+        let handler = createHandler()
         await initializeHandler(handler)
         let encoder = createEncoder()
         let decoder = createDecoder()
@@ -68,7 +81,7 @@ struct APIContractTests {
     }
 
     @Test func testLogMessageResponseFormat() async {
-        let handler = MCPRequestHandler()
+        let handler = createHandler()
         await initializeHandler(handler)
         let encoder = createEncoder()
 
@@ -93,7 +106,7 @@ struct APIContractTests {
     }
 
     @Test func testLogMessageWithSpecialCharacters() async {
-        let handler = MCPRequestHandler()
+        let handler = createHandler()
         await initializeHandler(handler)
         let encoder = createEncoder()
 
@@ -128,7 +141,7 @@ struct APIContractTests {
 
     // T3.2: log.getEntries contract tests
     @Test func testGetEntriesWithLevelFilter() async {
-        let handler = MCPRequestHandler()
+        let handler = createHandler()
         await initializeHandler(handler)
         let encoder = createEncoder()
         let decoder = createDecoder()
@@ -166,7 +179,7 @@ struct APIContractTests {
     }
 
     @Test func testGetEntriesEmptyLogger() async {
-        let handler = MCPRequestHandler()
+        let handler = createHandler()
         await initializeHandler(handler)
         let encoder = createEncoder()
         let decoder = createDecoder()
@@ -186,7 +199,7 @@ struct APIContractTests {
     }
 
     @Test func testGetEntriesResponseFormat() async {
-        let handler = MCPRequestHandler()
+        let handler = createHandler()
         await initializeHandler(handler)
         let encoder = createEncoder()
 
@@ -221,7 +234,7 @@ struct APIContractTests {
 
     // T3.3: log.clear contract tests
     @Test func testClearRemovesAllEntries() async {
-        let handler = MCPRequestHandler()
+        let handler = createHandler()
         await initializeHandler(handler)
         let encoder = createEncoder()
         let decoder = createDecoder()
@@ -271,7 +284,7 @@ struct APIContractTests {
     }
 
     @Test func testClearDoesNotAffectOtherLoggers() async {
-        let handler = MCPRequestHandler()
+        let handler = createHandler()
         await initializeHandler(handler)
         let encoder = createEncoder()
 
@@ -312,7 +325,7 @@ struct APIContractTests {
 
     // T3.4: log.setLevel contract tests
     @Test func testSetLevelChangesFiltering() async {
-        let handler = MCPRequestHandler()
+        let handler = createHandler()
         await initializeHandler(handler)
         let encoder = createEncoder()
 
@@ -329,7 +342,7 @@ struct APIContractTests {
     }
 
     @Test func testSetLevelWithAllLevels() async {
-        let handler = MCPRequestHandler()
+        let handler = createHandler()
         await initializeHandler(handler)
         let encoder = createEncoder()
         let decoder = createDecoder()
@@ -352,16 +365,16 @@ struct APIContractTests {
         }
     }
 
-    // T3.5: system.capabilities contract tests
+    // T3.5: initialize response contains capabilities
     @Test func testCapabilitiesReturnsStructure() async {
-        let handler = MCPRequestHandler()
+        let handler = createHandler()
         let encoder = createEncoder()
         let decoder = createDecoder()
 
         let request = MCPRequest(
             jsonrpc: "2.0",
             id: "1",
-            method: "system.capabilities",
+            method: "initialize",
             params: .none
         )
 
@@ -373,13 +386,13 @@ struct APIContractTests {
     }
 
     @Test func testCapabilitiesIncludesMethods() async {
-        let handler = MCPRequestHandler()
+        let handler = createHandler()
         let encoder = createEncoder()
 
         let request = MCPRequest(
             jsonrpc: "2.0",
             id: "1",
-            method: "system.capabilities",
+            method: "initialize",
             params: .none
         )
 
@@ -398,7 +411,7 @@ struct APIContractTests {
 
     // T3.6: tools/list contract tests
     @Test func testToolsListReturnsTools() async {
-        let handler = MCPRequestHandler()
+        let handler = createHandler()
         let encoder = createEncoder()
         let decoder = createDecoder()
 
@@ -417,7 +430,7 @@ struct APIContractTests {
     }
 
     @Test func testToolsListContainsAllTools() async {
-        let handler = MCPRequestHandler()
+        let handler = createHandler()
         let encoder = createEncoder()
 
         let request = MCPRequest(
@@ -438,7 +451,7 @@ struct APIContractTests {
     }
 
     @Test func testToolsListResponseFormat() async {
-        let handler = MCPRequestHandler()
+        let handler = createHandler()
         let encoder = createEncoder()
 
         let request = MCPRequest(

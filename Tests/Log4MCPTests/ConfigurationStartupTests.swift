@@ -7,6 +7,19 @@ import MCPServer
 
 struct ConfigurationStartupTests {
 
+    private func createHandler() -> MCPRequestHandler {
+        let config = ServerConfig(
+            port: 3000,
+            host: "localhost",
+            maxLogEntries: 1000,
+            defaultLogLevel: .info,
+            verbose: false,
+            mode: .tcp
+        )
+        let delegate = Log4MCPDelegate(config: config)
+        return MCPRequestHandler(delegate: delegate)
+    }
+
     private func initializeHandler(_ handler: MCPRequestHandler) async {
         let encoder = JSONEncoder()
 
@@ -14,7 +27,7 @@ struct ConfigurationStartupTests {
         let initRequest = MCPRequest(
             jsonrpc: "2.0",
             id: "init",
-            method: "system.initialize",
+            method: "initialize",
             params: .none
         )
         let _ = await handler.handleRequest(try! encoder.encode(initRequest))
@@ -23,7 +36,7 @@ struct ConfigurationStartupTests {
         let initializedRequest = MCPRequest(
             jsonrpc: "2.0",
             id: nil,
-            method: "system.initialized",
+            method: "initialized",
             params: .none
         )
         let _ = await handler.handleRequest(try! encoder.encode(initializedRequest))
@@ -105,7 +118,7 @@ struct ConfigurationStartupTests {
 
     // T7.2: Startup tests
     @Test func testRequestHandlerInitialization() async {
-        let handler = MCPRequestHandler()
+        let handler = createHandler()
         #expect(true)
     }
 
@@ -116,8 +129,8 @@ struct ConfigurationStartupTests {
     }
 
     @Test func testMultipleHandlerInstances() async {
-        let handler1 = MCPRequestHandler()
-        let handler2 = MCPRequestHandler()
+        let handler1 = createHandler()
+        let handler2 = createHandler()
 
         await initializeHandler(handler1)
         await initializeHandler(handler2)
